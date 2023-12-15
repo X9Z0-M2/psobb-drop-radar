@@ -12,7 +12,10 @@ local optionsLoaded, options = pcall(require, "Drop Radar.options")
 local optionsFileName = "addons/Drop Radar/options.lua"
 local ConfigurationWindow
 
-if optionsLoaded then
+local function LoadOptions()
+    if options == nil or type(options) ~= "table" then
+        options = {}
+    end
     -- If options loaded, make sure we have all those we need
     options.configurationEnableWindow = lib_helpers.NotNilOrDefault(options.configurationEnableWindow, true)
     options.enable                    = lib_helpers.NotNilOrDefault(options.enable, true)
@@ -24,15 +27,15 @@ if optionsLoaded then
         options.hud = {}
     end
     options.hud.EnableWindow                 = lib_helpers.NotNilOrDefault(options.hud.EnableWindow, true)
-    options.hud.HideWhenMenu                 = lib_helpers.NotNilOrDefault(options.hud.HideWhenMenu, true)
-    options.hud.HideWhenSymbolChat           = lib_helpers.NotNilOrDefault(options.hud.HideWhenSymbolChat, true)
-    options.hud.HideWhenMenuUnavailable      = lib_helpers.NotNilOrDefault(options.hud.HideWhenMenuUnavailable, true)
+    options.hud.HideWhenMenu                 = lib_helpers.NotNilOrDefault(options.hud.HideWhenMenu, false)
+    options.hud.HideWhenSymbolChat           = lib_helpers.NotNilOrDefault(options.hud.HideWhenSymbolChat, false)
+    options.hud.HideWhenMenuUnavailable      = lib_helpers.NotNilOrDefault(options.hud.HideWhenMenuUnavailable, false)
     options.hud.changed                      = lib_helpers.NotNilOrDefault(options.hud.changed, true)
     options.hud.Anchor                       = lib_helpers.NotNilOrDefault(options.hud.Anchor, 1)
     options.hud.X                            = lib_helpers.NotNilOrDefault(options.hud.X, 50)
     options.hud.Y                            = lib_helpers.NotNilOrDefault(options.hud.Y, 50)
-    options.hud.W                            = lib_helpers.NotNilOrDefault(options.hud.W, 450)
-    options.hud.H                            = lib_helpers.NotNilOrDefault(options.hud.H, 350)
+    options.hud.W                            = lib_helpers.NotNilOrDefault(options.hud.W, 600)
+    options.hud.H                            = lib_helpers.NotNilOrDefault(options.hud.H, 50)
     options.hud.NoTitleBar                   = lib_helpers.NotNilOrDefault(options.hud.NoTitleBar, "")
     options.hud.NoResize                     = lib_helpers.NotNilOrDefault(options.hud.NoResize, "")
     options.hud.NoMove                       = lib_helpers.NotNilOrDefault(options.hud.NoMove, "")
@@ -51,7 +54,7 @@ if optionsLoaded then
     options.hud.sizing.UselessBarriersH   = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessBarriersH,  25)
     options.hud.sizing.UselessUnitsH      = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessUnitsH,  32)
     options.hud.sizing.UselessTechsH      = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessTechsH,  35)
-    options.hud.sizing.MesetaMin          = lib_helpers.NotNilOrDefault(options.hud.sizing.MesetaMin, 800)
+    options.hud.sizing.MesetaMin          = lib_helpers.NotNilOrDefault(options.hud.sizing.MesetaMin, 500)
     options.hud.sizing.MesetaMax          = lib_helpers.NotNilOrDefault(options.hud.sizing.MesetaMax,  4000)
     options.hud.sizing.MesetaMinH         = lib_helpers.NotNilOrDefault(options.hud.sizing.MesetaMinH, 45)
     options.hud.sizing.MesetaMaxH         = lib_helpers.NotNilOrDefault(options.hud.sizing.MesetaMaxH, 100)
@@ -65,15 +68,19 @@ if optionsLoaded then
     options.hud.sizing.TechReverserH      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechReverserH,  70)
     options.hud.sizing.TechRyukerH        = lib_helpers.NotNilOrDefault(options.hud.sizing.TechRyukerH,  70)
     options.hud.sizing.TechMegidH         = lib_helpers.NotNilOrDefault(options.hud.sizing.TechMegidH,  90)
+    options.hud.sizing.TechMegidMin       = lib_helpers.NotNilOrDefault(options.hud.sizing.TechMegidMin,  26)
     options.hud.sizing.TechGrantsH        = lib_helpers.NotNilOrDefault(options.hud.sizing.TechGrantsH,  90)
+    options.hud.sizing.TechGrantsMin      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechGrantsMin,  26)
     options.hud.sizing.TechAnti5H         = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAnti5H,  70)
     options.hud.sizing.TechAnti7H         = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAnti7H,  88)
     options.hud.sizing.TechSupport15H     = lib_helpers.NotNilOrDefault(options.hud.sizing.TechSupport15H,  65)
     options.hud.sizing.TechSupport20H     = lib_helpers.NotNilOrDefault(options.hud.sizing.TechSupport20H,  75)
     options.hud.sizing.TechSupport30H     = lib_helpers.NotNilOrDefault(options.hud.sizing.TechSupport30H,  90)
+    options.hud.sizing.TechSupportMin     = lib_helpers.NotNilOrDefault(options.hud.sizing.TechSupportMin,  30)
     options.hud.sizing.TechAttack15H      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAttack15H,  65)
     options.hud.sizing.TechAttack20H      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAttack20H,  75)
     options.hud.sizing.TechAttack30H      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAttack30H,  93)
+    options.hud.sizing.TechAttackMin      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAttackMin,  29)
     options.hud.sizing.MonomateH          = lib_helpers.NotNilOrDefault(options.hud.sizing.MonomateH,  30)
     options.hud.sizing.DimateH            = lib_helpers.NotNilOrDefault(options.hud.sizing.DimateH,  45)
     options.hud.sizing.TrimateH           = lib_helpers.NotNilOrDefault(options.hud.sizing.TrimateH,  60)
@@ -98,184 +105,63 @@ if optionsLoaded then
     options.hud.sizing.DefenseMatH        = lib_helpers.NotNilOrDefault(options.hud.sizing.DefenseMatH,  85)
     options.hud.sizing.EvadeMatH          = lib_helpers.NotNilOrDefault(options.hud.sizing.EvadeMatH,  85)
     options.hud.sizing.ClairesDealH       = lib_helpers.NotNilOrDefault(options.hud.sizing.ClairesDealH,  92)
-else
-    options =
-    {
-        configurationEnableWindow = true,
-
-        enable = true,
-        ignoreMeseta = false,
-        updateThrottle = 0,
-        server = 1,
-        hud = {
-            EnableWindow = true,
-            HideWhenMenu = false,
-            HideWhenSymbolChat = false,
-            HideWhenMenuUnavailable = false,
-            changed = true,
-            Anchor = 1,
-            X = 50,
-            Y = 50,
-            W = 600,
-            H = 50,
-            NoTitleBar = "",
-            NoResize = "",
-            NoMove = "",
-            AlwaysAutoResize = "",
-            TransparentWindow = false,
-            sizing = {
-                HitMin = 40,
-                LowHitWeaponsH  = 10,
-                HighHitWeaponsH  = 86,
-                UselessWeaponsH  = 20,
-                UselessArmorsH  = 25,
-                MaxSocketArmorH  = 81,
-                UselessBarriersH  = 25,
-                UselessUnitsH  = 32,
-                UselessTechsH  = 35,
-                MesetaMin  = 800,
-                MesetaMax  = 4000,
-                MesetaMinH = 45,
-                MesetaMaxH = 100,
-                WeaponsH  = 100,
-                SRankWeaponsH  = 100,
-                ArmorsH  = 100,
-                BarriersH  = 100,
-                UnitsH  = 100,
-                MagsH  = 100,
-                ConsumablesH  = 90,
-                TechReverserH  = 70,
-                TechRyukerH  = 70,
-                TechMegidH  = 90,
-                TechGrantsH  = 90,
-                TechAnti5H  = 70,
-                TechAnti7H  = 88,
-                TechSupport15H  = 65,
-                TechSupport20H  = 75,
-                TechSupport30H  = 90,
-                TechAttack15H  = 65,
-                TechAttack20H  = 75,
-                TechAttack30H  = 93,
-                MonomateH  = 30,
-                DimateH  = 45,
-                TrimateH  = 60,
-                MonofluidH  = 30,
-                DifluidH  = 45,
-                TrifluidH  = 60,
-                SolAtomizerH  = 30,
-                MoonAtomizerH  = 45,
-                StarAtomizerH  = 75,
-                AntidoteH  = 20,
-                AntiparalysisH  = 20,
-                TelepipeH  = 20,
-                TrapVisionH  = 20,
-                ScapeDollH  = 75,
-                MonogrinderH  = 55,
-                DigrinderH  = 70,
-                TrigrinderH  = 90,
-                HPMatH  = 95,
-                PowerMatH  = 92,
-                LuckMatH  = 100,
-                MindMatH  = 92,
-                DefenseMatH  = 85,
-                EvadeMatH  = 85,
-                ClairesDealH  = 92,
-            },
-        }
-    }
 end
+LoadOptions()
 
 -- Append server specific items
 lib_items_list.AddServerItems(options.server)
 
+local stringBuilder = ""
+local function BuildOptionsString(table, depth)
+    local tabSpacing = 4
+    local maxDepth = 5
+    
+    if not depth or depth == nil then
+        depth = 0
+    end
+    local spaces = string.rep(" ", tabSpacing + tabSpacing * depth)
+    
+    --begin statement
+    if depth < 1 then
+        stringBuilder = "return\n{\n"
+    end
+    --iterate over table
+    for key, value in pairs(table) do
+        
+        local type = type(value)
+        if type == "string" then
+            stringBuilder = stringBuilder .. spaces .. string.format("%s = \"%s\",\n", key, tostring(value))
+        
+        elseif type == "number" then
+            stringBuilder = stringBuilder .. spaces .. string.format("%s = %i,\n", key, tostring(value))
+            
+        elseif type == "boolean" or value == nil then
+            stringBuilder = stringBuilder .. spaces .. string.format("%s = %s,\n", key, tostring(value))
+            
+        --recurse
+        elseif type == "table" then
+            if maxDepth > 5 then
+                return
+            end
+            stringBuilder = stringBuilder .. spaces .. string.format("%s = {\n", key)
+            BuildOptionsString(value, depth + 1)
+            stringBuilder = stringBuilder .. spaces .. string.format("},\n", key)
+        end
+        
+    end
+    --finalize statement
+    if depth < 1 then
+        stringBuilder = stringBuilder .. "}\n"
+    end
+end
+
 local function SaveOptions(options)
     local file = io.open(optionsFileName, "w")
     if file ~= nil then
+        BuildOptionsString(options)
+        
         io.output(file)
-
-        io.write("return\n")
-        io.write("{\n")
-        io.write(string.format("    configurationEnableWindow = %s,\n", tostring(options.configurationEnableWindow)))
-        io.write(string.format("    enable = %s,\n", tostring(options.enable)))
-        io.write(string.format("    ignoreMeseta = %s,\n", tostring(options.ignoreMeseta)))
-        io.write(string.format("    server = %s,\n", tostring(options.server)))
-        io.write(string.format("    updateThrottle = %i,\n", tostring(options.updateThrottle)))
-        io.write(string.format("    hud = {\n"))
-        io.write(string.format("        EnableWindow = %s,\n", tostring(options.hud.EnableWindow)))
-        io.write(string.format("        HideWhenMenu = %s,\n", tostring(options.hud.HideWhenMenu)))
-        io.write(string.format("        HideWhenSymbolChat = %s,\n", tostring(options.hud.HideWhenSymbolChat)))
-        io.write(string.format("        HideWhenMenuUnavailable = %s,\n", tostring(options.hud.HideWhenMenuUnavailable)))
-        io.write(string.format("        Anchor = %i,\n", options.hud.Anchor))
-        io.write(string.format("        X = %i,\n", options.hud.X))
-        io.write(string.format("        Y = %i,\n", options.hud.Y))
-        io.write(string.format("        W = %i,\n", options.hud.W))
-        io.write(string.format("        H = %i,\n", options.hud.H))
-        io.write(string.format("        NoTitleBar = \"%s\",\n", options.hud.NoTitleBar))
-        io.write(string.format("        NoResize = \"%s\",\n", options.hud.NoResize))
-        io.write(string.format("        NoMove = \"%s\",\n", options.hud.NoMove))
-        io.write(string.format("        AlwaysAutoResize = \"%s\",\n", options.hud.AlwaysAutoResize))
-        io.write(string.format("        TransparentWindow = %s,\n", options.hud.TransparentWindow))
-        io.write(string.format("        sizing = {\n"))
-        io.write(string.format("            HitMin = %s,\n", options.hud.sizing.HitMin))
-        io.write(string.format("            LowHitWeaponsH = %s,\n", options.hud.sizing.LowHitWeaponsH))
-        io.write(string.format("            HighHitWeaponsH = %s,\n", options.hud.sizing.HighHitWeaponsH))
-        io.write(string.format("            UselessWeaponsH = %s,\n", options.hud.sizing.UselessWeaponsH))
-        io.write(string.format("            UselessArmorsH = %s,\n", options.hud.sizing.UselessArmorsH))
-        io.write(string.format("            MaxSocketArmorH = %s,\n", options.hud.sizing.MaxSocketArmorH))
-        io.write(string.format("            UselessBarriersH = %s,\n", options.hud.sizing.UselessBarriersH))
-        io.write(string.format("            UselessUnitsH = %s,\n", options.hud.sizing.UselessUnitsH))
-        io.write(string.format("            UselessTechsH = %s,\n", options.hud.sizing.UselessTechsH))
-        io.write(string.format("            MesetaMin = %s,\n", options.hud.sizing.MesetaMin))
-        io.write(string.format("            MesetaMax = %s,\n", options.hud.sizing.MesetaMax))
-        io.write(string.format("            MesetaMinH = %s,\n", options.hud.sizing.MesetaMinH))
-        io.write(string.format("            MesetaMaxH = %s,\n", options.hud.sizing.MesetaMaxH))
-        io.write(string.format("            WeaponsH = %s,\n", options.hud.sizing.WeaponsH))
-        io.write(string.format("            SRankWeaponsH = %s,\n", options.hud.sizing.SRankWeaponsH))
-        io.write(string.format("            ArmorsH = %s,\n", options.hud.sizing.ArmorsH))
-        io.write(string.format("            BarriersH = %s,\n", options.hud.sizing.BarriersH))
-        io.write(string.format("            UnitsH = %s,\n", options.hud.sizing.UnitsH))
-        io.write(string.format("            MagsH = %s,\n", options.hud.sizing.MagsH))
-        io.write(string.format("            ConsumablesH = %s,\n", options.hud.sizing.ConsumablesH))
-        io.write(string.format("            TechReverserH = %s,\n", options.hud.sizing.TechReverserH))
-        io.write(string.format("            TechRyukerH = %s,\n", options.hud.sizing.TechRyukerH))
-        io.write(string.format("            TechMegidH = %s,\n", options.hud.sizing.TechMegidH))
-        io.write(string.format("            TechGrantsH = %s,\n", options.hud.sizing.TechGrantsH))
-        io.write(string.format("            TechAnti5H = %s,\n", options.hud.sizing.TechAnti5H))
-        io.write(string.format("            TechAnti7H = %s,\n", options.hud.sizing.TechAnti7H))
-        io.write(string.format("            TechSupport15H = %s,\n", options.hud.sizing.TechSupport15H))
-        io.write(string.format("            TechSupport20H = %s,\n", options.hud.sizing.TechSupport20H))
-        io.write(string.format("            TechSupport30H = %s,\n", options.hud.sizing.TechSupport30H))
-        io.write(string.format("            TechAttack15H = %s,\n", options.hud.sizing.TechAttack15H))
-        io.write(string.format("            TechAttack20H = %s,\n", options.hud.sizing.TechAttack20H))
-        io.write(string.format("            TechAttack30H = %s,\n", options.hud.sizing.TechAttack30H))
-        io.write(string.format("            DimateH = %s,\n", options.hud.sizing.MonomateH))
-        io.write(string.format("            TechsH = %s,\n", options.hud.sizing.DimateH))
-        io.write(string.format("            TrimateH = %s,\n", options.hud.sizing.TrimateH))
-        io.write(string.format("            MonofluidH = %s,\n", options.hud.sizing.MonofluidH))
-        io.write(string.format("            DifluidH = %s,\n", options.hud.sizing.DifluidH))
-        io.write(string.format("            TrifluidH = %s,\n", options.hud.sizing.TrifluidH))
-        io.write(string.format("            SolAtomizerH = %s,\n", options.hud.sizing.SolAtomizerH))
-        io.write(string.format("            MoonAtomizerH = %s,\n", options.hud.sizing.MoonAtomizerH))
-        io.write(string.format("            StarAtomizerH = %s,\n", options.hud.sizing.StarAtomizerH))
-        io.write(string.format("            AntidoteH = %s,\n", options.hud.sizing.AntidoteH))
-        io.write(string.format("            AntiparalysisH = %s,\n", options.hud.sizing.AntiparalysisH))
-        io.write(string.format("            TelepipeH = %s,\n", options.hud.sizing.TelepipeH))
-        io.write(string.format("            TrapVisionH = %s,\n", options.hud.sizing.TrapVisionH))
-        io.write(string.format("            ScapeDollH = %s,\n", options.hud.sizing.ScapeDollH))
-        io.write(string.format("            MonogrinderH = %s,\n", options.hud.sizing.MonogrinderH))
-        io.write(string.format("            DigrinderH = %s,\n", options.hud.sizing.DigrinderH))
-        io.write(string.format("            TrigrinderH = %s,\n", options.hud.sizing.TrigrinderH))
-        io.write(string.format("            HPMatH = %s,\n", options.hud.sizing.HPMatH))
-        io.write(string.format("            PowerMatH = %s,\n", options.hud.sizing.PowerMatH))
-        io.write(string.format("            LuckMatH = %s,\n", options.hud.sizing.LuckMatH))
-        io.write(string.format("            MindMatH = %s,\n", options.hud.sizing.MindMatH))
-        io.write(string.format("            DefenseMatH = %s,\n", options.hud.sizing.DefenseMatH))
-        io.write(string.format("            EvadeMatH = %s,\n", options.hud.sizing.EvadeMatH))
-        io.write(string.format("            ClairesDealH = %s,\n", options.hud.sizing.ClairesDealH))
-        io.write(string.format("        },\n"))
-        io.write(string.format("    },\n"))
-        io.write("}\n")
-
+        io.write(stringBuilder)
         io.close(file)
     end
 end
@@ -511,35 +397,35 @@ local function ProcessTool(item, floor)
                 end
             -- Is Good Megid/Grants
             elseif item.data[5] == 0x12 then
-                if item.tool.level >= 26 then
+                if item.tool.level >= options.hud.sizing.TechMegidMin then
                     ItemAppendGraphData( options.hud.sizing.TechMegidH, item )
                 else
                     ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
                 end
             elseif item.data[5] == 0x09 then
-                if item.tool.level >= 26 then
+                if item.tool.level >= options.hud.sizing.TechGrantsMin then
                     ItemAppendGraphData( options.hud.sizing.TechGrantsH, item )
                 else
                     ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
                 end
             -- Is good support spell
             elseif item.data[5] == 0x0A or item.data[5] == 0x0B or item.data[5] == 0x0C or item.data[5] == 0x0D or item.data[5] == 0x0F then
-                if item.tool.level == 15 then
+                if item.tool.level >= options.hud.sizing.TechSupportMin then
+                    ItemAppendGraphData( options.hud.sizing.TechSupport30H, item )
+                elseif item.tool.level == 15 then
                     ItemAppendGraphData( options.hud.sizing.TechSupport15H, item )
                 elseif item.tool.level == 20 then
                     ItemAppendGraphData( options.hud.sizing.TechSupport20H, item )
-                elseif item.tool.level >= 30 then
-                    ItemAppendGraphData( options.hud.sizing.TechSupport30H, item )
                 else
                     ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
                 end
             -- Is a max tier tech?
+            elseif item.tool.level >= options.hud.sizing.TechAttackMin then
+                ItemAppendGraphData( options.hud.sizing.TechAttack30H, item )
             elseif item.tool.level == 15 then
                 ItemAppendGraphData( options.hud.sizing.TechAttack15H, item )
             elseif item.tool.level == 20 then
                 ItemAppendGraphData( options.hud.sizing.TechAttack20H, item )
-            elseif item.tool.level >= 29 then
-                ItemAppendGraphData( options.hud.sizing.TechAttack30H, item )
             else
                 ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
             end

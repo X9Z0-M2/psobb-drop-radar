@@ -24,6 +24,22 @@ local function ConfigurationWindow(configuration)
             "Schthack",
         }
 
+        local function dropSizing(Name, Setting, Width, Range, NoGraph)
+            if Width == nil then return Setting end
+            if Range == nil or type(Range) ~= "table" or Range[1] == nil or Range[2] == nil then return Setting end
+            if not NoGraph then
+                imgui.PlotHistogram("", {Setting}, 1, 0, "", 0, 100, 12, 20)
+                imgui.SameLine(0, 4)
+            end
+            imgui.PushItemWidth(Width)
+            success, Setting = imgui.SliderInt(Name, Setting, Range[1], Range[2])
+            imgui.PopItemWidth()
+            if success then
+                this.changed = true
+            end
+            return Setting
+        end
+
         if imgui.TreeNodeEx("General", "DefaultOpen") then
             if imgui.Checkbox("Enable", _configuration.enable) then
                 _configuration.enable = not _configuration.enable
@@ -117,393 +133,230 @@ local function ConfigurationWindow(configuration)
 
             if imgui.TreeNodeEx("Custom Sizing") then
                 local SWidth = 110
+                local SWidthP = SWidth + 16
+                local SizingRange = {0,100}
+                local MesetaRange = {1,999999}
+                local TechRange = {1,30}
+                local TechAntiRange = {1,7}
 
-                imgui.Text("Non-Rares")
+                if imgui.TreeNodeEx("Non-Rares") then
                 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.HitMin = imgui.InputInt("Minimum Hit", _configuration.hud.sizing.HitMin)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    imgui.Columns(2, "nonrare")
+                    imgui.PushItemWidth(SWidth)
+                    success, _configuration.hud.sizing.HitMin = imgui.InputInt("Minimum Hit", _configuration.hud.sizing.HitMin)
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                    end
+                    imgui.NextColumn()
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.LowHitWeaponsH = imgui.SliderInt("Low Hit Weapons H", _configuration.hud.sizing.LowHitWeaponsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 9)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.HighHitWeaponsH = imgui.SliderInt("High Hit Weapons H", _configuration.hud.sizing.HighHitWeaponsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.UselessArmorsH = imgui.SliderInt("<4s Armor H", _configuration.hud.sizing.UselessArmorsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 44)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.MaxSocketArmorH = imgui.SliderInt("=4s Armor H", _configuration.hud.sizing.MaxSocketArmorH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    _configuration.hud.sizing.LowHitWeaponsH = dropSizing("Low Hit Weapons", _configuration.hud.sizing.LowHitWeaponsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.HighHitWeaponsH = dropSizing("High Hit Weapons", _configuration.hud.sizing.HighHitWeaponsH, SWidth, SizingRange)
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.UselessWeaponsH = imgui.SliderInt("Useless Weapons H", _configuration.hud.sizing.UselessWeaponsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 11)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.UselessBarriersH = imgui.SliderInt("Useless Barriers H", _configuration.hud.sizing.UselessBarriersH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.UselessUnitsH = imgui.SliderInt("Useless Units H", _configuration.hud.sizing.UselessUnitsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 29)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.UselessTechsH = imgui.SliderInt("Useless Techs H", _configuration.hud.sizing.UselessTechsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    _configuration.hud.sizing.UselessArmorsH = dropSizing("<4s Armor", _configuration.hud.sizing.UselessArmorsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.MaxSocketArmorH = dropSizing("=4s Armor", _configuration.hud.sizing.MaxSocketArmorH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    
+                    _configuration.hud.sizing.UselessWeaponsH = dropSizing("Useless Weapons", _configuration.hud.sizing.UselessWeaponsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.UselessBarriersH = dropSizing("Useless Barriers", _configuration.hud.sizing.UselessBarriersH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    
+                    _configuration.hud.sizing.UselessUnitsH = dropSizing("Useless Units", _configuration.hud.sizing.UselessUnitsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.UselessTechsH = dropSizing("Useless Techs", _configuration.hud.sizing.UselessTechsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    
+                    _configuration.hud.sizing.MesetaMinH = dropSizing("Meseta Height Min", _configuration.hud.sizing.MesetaMinH, SWidth, SizingRange)
+                    if _configuration.hud.sizing.MesetaMinH > _configuration.hud.sizing.MesetaMaxH then
+                        _configuration.hud.sizing.MesetaMinH = _configuration.hud.sizing.MesetaMaxH
+                    end
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.MesetaMaxH = dropSizing("Meseta Height Max", _configuration.hud.sizing.MesetaMaxH, SWidth, SizingRange)
+                    if _configuration.hud.sizing.MesetaMaxH < _configuration.hud.sizing.MesetaMinH then
+                        _configuration.hud.sizing.MesetaMaxH = _configuration.hud.sizing.MesetaMinH
+                    end
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth * 2 + 4)
-                success, _configuration.hud.sizing.MesetaMin, _configuration.hud.sizing.MesetaMax = imgui.DragIntRange2("Meseta Min | Max", _configuration.hud.sizing.MesetaMin, _configuration.hud.sizing.MesetaMax, 1, 999999)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    imgui.PushItemWidth(SWidthP)
+                    success, _configuration.hud.sizing.MesetaMin = imgui.DragInt("Meseta Min", _configuration.hud.sizing.MesetaMin, 10, MesetaRange[1], MesetaRange[2])
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                    end
+                    if _configuration.hud.sizing.MesetaMin > _configuration.hud.sizing.MesetaMax then
+                        _configuration.hud.sizing.MesetaMin = _configuration.hud.sizing.MesetaMax
+                    end
+                    imgui.NextColumn()
+                    imgui.PushItemWidth(SWidthP)
+                    success, _configuration.hud.sizing.MesetaMax = imgui.DragInt("Meseta Max", _configuration.hud.sizing.MesetaMax, 10, MesetaRange[1], MesetaRange[2])
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                    end
+                    if _configuration.hud.sizing.MesetaMax < _configuration.hud.sizing.MesetaMin then
+                        _configuration.hud.sizing.MesetaMax = _configuration.hud.sizing.MesetaMin
+                    end
 
-                imgui.PushItemWidth(SWidth * 2 + 4)
-                success, _configuration.hud.sizing.MesetaMinH, _configuration.hud.sizing.MesetaMaxH = imgui.DragIntRange2("Meseta Height Min | Max", _configuration.hud.sizing.MesetaMinH, _configuration.hud.sizing.MesetaMaxH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
+                    imgui.Columns(1)
+                    imgui.TreePop()
                 end
 
                 
-                imgui.Text("Rares")
+                if imgui.TreeNodeEx("Rares") then
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.WeaponsH = imgui.SliderInt("Weapons H", _configuration.hud.sizing.WeaponsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 53)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.SRankWeaponsH = imgui.SliderInt("SRank Weapons H", _configuration.hud.sizing.SRankWeaponsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    imgui.Columns(2, "rare")
+                    _configuration.hud.sizing.WeaponsH = dropSizing("Weapons", _configuration.hud.sizing.WeaponsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.SRankWeaponsH = dropSizing("SRank Weapons", _configuration.hud.sizing.SRankWeaponsH, SWidth, SizingRange)
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.ArmorsH = imgui.SliderInt("Armor H", _configuration.hud.sizing.ArmorsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 57)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.BarriersH = imgui.SliderInt("Barriers H", _configuration.hud.sizing.BarriersH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    _configuration.hud.sizing.ArmorsH = dropSizing("Armor", _configuration.hud.sizing.ArmorsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.BarriersH = dropSizing("Barriers", _configuration.hud.sizing.BarriersH, SWidth, SizingRange)
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.UnitsH = imgui.SliderInt("Units H", _configuration.hud.sizing.UnitsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 69)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.MagsH = imgui.SliderInt("Mags H", _configuration.hud.sizing.MagsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    _configuration.hud.sizing.UnitsH = dropSizing("Units", _configuration.hud.sizing.UnitsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.MagsH = dropSizing("Mags", _configuration.hud.sizing.MagsH, SWidth, SizingRange)
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.ConsumablesH = imgui.SliderInt("Consumables H", _configuration.hud.sizing.ConsumablesH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
+                    _configuration.hud.sizing.ConsumablesH = dropSizing("Consumables", _configuration.hud.sizing.ConsumablesH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    imgui.Columns(1)
+                    imgui.TreePop()
                 end
                 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechReverserH = imgui.SliderInt("Reverser H", _configuration.hud.sizing.TechReverserH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 69)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechRyukerH = imgui.SliderInt("Ryuker H", _configuration.hud.sizing.TechRyukerH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
+                if imgui.TreeNodeEx("Techs") then
+
+                    imgui.Columns(2, "tech")
+                    _configuration.hud.sizing.TechReverserH = dropSizing("Reverser",_configuration.hud.sizing.TechReverserH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechRyukerH = dropSizing("Ryuker",_configuration.hud.sizing.TechRyukerH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TechAnti5H = dropSizing("Anti 5",_configuration.hud.sizing.TechAnti5H, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechAnti7H = dropSizing("Anti 7",_configuration.hud.sizing.TechAnti7H, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TechSupport15H = dropSizing("Support Tech 15",_configuration.hud.sizing.TechSupport15H, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechSupport20H = dropSizing("Support Tech 20",_configuration.hud.sizing.TechSupport20H, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TechAttack15H = dropSizing("Attack Tech 15",_configuration.hud.sizing.TechAttack15H, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechAttack20H = dropSizing("Attack Tech 20",_configuration.hud.sizing.TechAttack20H, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TechSupport30H = dropSizing("Support Tech",_configuration.hud.sizing.TechSupport30H, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechSupportMin = dropSizing("Support Min Level",_configuration.hud.sizing.TechSupportMin, SWidthP, TechRange, 1)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TechAttack30H = dropSizing("Attack Tech",_configuration.hud.sizing.TechAttack30H, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechAttackMin = dropSizing("Attack Level",_configuration.hud.sizing.TechAttackMin, SWidthP, TechRange, 1)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TechMegidH = dropSizing("Megid",_configuration.hud.sizing.TechMegidH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechMegidMin = dropSizing("Megid Min Level",_configuration.hud.sizing.TechMegidMin, SWidthP, TechRange, 1)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TechGrantsH = dropSizing("Grants",_configuration.hud.sizing.TechGrantsH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TechGrantsMin = dropSizing("Grants Min Level",_configuration.hud.sizing.TechGrantsMin, SWidthP, TechRange, 1)
+                    imgui.NextColumn()
+
+                    imgui.Columns(1)
+                    imgui.TreePop()
                 end
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechMegidH = imgui.SliderInt("Megid H", _configuration.hud.sizing.TechMegidH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 69)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechGrantsH = imgui.SliderInt("Grants H", _configuration.hud.sizing.TechGrantsH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                if imgui.TreeNodeEx("Consumables") then
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechAnti5H = imgui.SliderInt("Anti 5 H", _configuration.hud.sizing.TechAnti5H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 69)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechAnti7H = imgui.SliderInt("Anti 7+ H", _configuration.hud.sizing.TechAnti7H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    imgui.Columns(2, "consumable")
+                    _configuration.hud.sizing.MonomateH = dropSizing("Monomates",_configuration.hud.sizing.MonomateH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.DimateH = dropSizing("Dimates",_configuration.hud.sizing.DimateH, SWidth, SizingRange)
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechSupport15H = imgui.SliderInt("Support Tech 15 H", _configuration.hud.sizing.TechSupport15H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 69)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechSupport20H = imgui.SliderInt("Support Tech 20 H", _configuration.hud.sizing.TechSupport20H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    _configuration.hud.sizing.TrimateH = dropSizing("Trimates",_configuration.hud.sizing.TrimateH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechSupport30H = imgui.SliderInt("Support Tech 30+ H", _configuration.hud.sizing.TechSupport30H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 69)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechAttack15H = imgui.SliderInt("Attack Tech 15 H", _configuration.hud.sizing.TechAttack15H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    _configuration.hud.sizing.MonofluidH = dropSizing("Monofluids",_configuration.hud.sizing.MonofluidH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.DifluidH = dropSizing("Difluids",_configuration.hud.sizing.DifluidH, SWidth, SizingRange)
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechAttack20H = imgui.SliderInt("Attack Tech 20 H", _configuration.hud.sizing.TechAttack20H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 69)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TechAttack30H = imgui.SliderInt("Attack Tech 29+ H", _configuration.hud.sizing.TechAttack30H, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
+                    _configuration.hud.sizing.TrifluidH = dropSizing("Trifluids",_configuration.hud.sizing.TrifluidH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    imgui.NextColumn()
+                    
+                    _configuration.hud.sizing.SolAtomizerH = dropSizing("Sol Atomizers",_configuration.hud.sizing.SolAtomizerH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.MoonAtomizerH = dropSizing("Moon Atomizers",_configuration.hud.sizing.MoonAtomizerH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.StarAtomizerH = dropSizing("Star Atomizers",_configuration.hud.sizing.StarAtomizerH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.AntidoteH = dropSizing("Antidotes",_configuration.hud.sizing.AntidoteH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.AntiparalysisH = dropSizing("Antiparalysis",_configuration.hud.sizing.AntiparalysisH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.TelepipeH = dropSizing("Telepipes",_configuration.hud.sizing.TelepipeH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.TrapVisionH = dropSizing("Trap Visions",_configuration.hud.sizing.TrapVisionH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.ScapeDollH = dropSizing("Scape Dolls",_configuration.hud.sizing.ScapeDollH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    imgui.Columns(1)
+                    imgui.TreePop()
                 end
 
 
-                imgui.Text("Consumables")
+                if imgui.TreeNodeEx("Grinders/Materials") then
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.MonomateH = imgui.SliderInt("Monomates H", _configuration.hud.sizing.MonomateH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 40)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.DimateH = imgui.SliderInt("Dimates H", _configuration.hud.sizing.DimateH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    imgui.Columns(2, "improver")
+                    _configuration.hud.sizing.MonogrinderH = dropSizing("Monogrinders",_configuration.hud.sizing.MonogrinderH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.DigrinderH = dropSizing("Digrinders",_configuration.hud.sizing.DigrinderH, SWidth, SizingRange)
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TrimateH = imgui.SliderInt("Trimates H", _configuration.hud.sizing.TrimateH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 52)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.MonofluidH = imgui.SliderInt("Monofluids H", _configuration.hud.sizing.MonofluidH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                    _configuration.hud.sizing.TrigrinderH = dropSizing("Trigrinders",_configuration.hud.sizing.TrigrinderH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    imgui.NextColumn()
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.DifluidH = imgui.SliderInt("Difluids H", _configuration.hud.sizing.DifluidH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 58)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TrifluidH = imgui.SliderInt("Trifluids H", _configuration.hud.sizing.TrifluidH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
+                    _configuration.hud.sizing.HPMatH = dropSizing("HP Material",_configuration.hud.sizing.HPMatH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.LuckMatH = dropSizing("Luck Material",_configuration.hud.sizing.LuckMatH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.PowerMatH = dropSizing("Power Material",_configuration.hud.sizing.PowerMatH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.MindMatH = dropSizing("Mind Material",_configuration.hud.sizing.MindMatH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    _configuration.hud.sizing.DefenseMatH = dropSizing("Defense Material",_configuration.hud.sizing.DefenseMatH, SWidth, SizingRange)
+                    imgui.NextColumn()
+                    _configuration.hud.sizing.EvadeMatH = dropSizing("Evade Material",_configuration.hud.sizing.EvadeMatH, SWidth, SizingRange)
+                    imgui.NextColumn()
+
+                    imgui.Columns(1)
+                    imgui.TreePop()
                 end
 
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.SolAtomizerH = imgui.SliderInt("Sol Atomizers H", _configuration.hud.sizing.SolAtomizerH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 27)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.MoonAtomizerH = imgui.SliderInt("Moon Atomizers H", _configuration.hud.sizing.MoonAtomizerH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.StarAtomizerH = imgui.SliderInt("Star Atomizers H", _configuration.hud.sizing.StarAtomizerH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 20)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.AntidoteH = imgui.SliderInt("Antidotes H", _configuration.hud.sizing.AntidoteH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.AntiparalysisH = imgui.SliderInt("Antiparalysis H", _configuration.hud.sizing.AntiparalysisH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 29)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TelepipeH = imgui.SliderInt("Telepipes H", _configuration.hud.sizing.TelepipeH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TrapVisionH = imgui.SliderInt("Trap Visions H", _configuration.hud.sizing.TrapVisionH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 34)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.ScapeDollH = imgui.SliderInt("Scape Dolls H", _configuration.hud.sizing.ScapeDollH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-
-                imgui.Text("Grinders/Materials")
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.MonogrinderH = imgui.SliderInt("Monogrinders H", _configuration.hud.sizing.MonogrinderH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 28)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.DigrinderH = imgui.SliderInt("Digrinders H", _configuration.hud.sizing.DigrinderH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.TrigrinderH = imgui.SliderInt("Trigrinders H", _configuration.hud.sizing.TrigrinderH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 40)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.HPMatH = imgui.SliderInt("HP Mat H", _configuration.hud.sizing.HPMatH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.PowerMatH = imgui.SliderInt("Power Mat H", _configuration.hud.sizing.PowerMatH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 43)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.LuckMatH = imgui.SliderInt("Luck Mat H", _configuration.hud.sizing.LuckMatH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.MindMatH = imgui.SliderInt("Mind Mat H", _configuration.hud.sizing.MindMatH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 50)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.DefenseMatH = imgui.SliderInt("Defense Mat H", _configuration.hud.sizing.DefenseMatH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.EvadeMatH = imgui.SliderInt("Evade Mat H", _configuration.hud.sizing.EvadeMatH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
-                imgui.SameLine(0, 45)
-                imgui.PushItemWidth(SWidth)
-                success, _configuration.hud.sizing.ClairesDealH = imgui.SliderInt("Claire's Deal 5 Items H", _configuration.hud.sizing.ClairesDealH, 0, 100)
-                imgui.PopItemWidth()
-                if success then
-                    this.changed = true
-                end
+                _configuration.hud.sizing.ClairesDealH = dropSizing("Claire's Deal 5 Items",_configuration.hud.sizing.ClairesDealH, SWidth, SizingRange)
 
                 imgui.TreePop()
             end
