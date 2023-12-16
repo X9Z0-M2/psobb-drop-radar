@@ -1,6 +1,6 @@
 ## PSOBB Drop Radar Addon
 
-Drop Radar will simplify shifting through piles of monomates, difluids, and other useless drops by providing real-time directional indication to valuable drops. While some psobb clients may also minimap indicators for rare drops or even allow you to customize which drops show up on the minimap, this adds another level of detail by filtering %hit weapons or meseta >1k, and showing if you're headed in the right direction.
+Drop Radar will simplify shifting through piles of monomates, difluids, and other useless drops by providing real-time directional indication to valuable drops. While some psobb clients may also have minimap indicators for rare drops or even allow you to customize which drops show up on the minimap, this adds another level of detail by filtering %hit weapons or meseta >1k, by showing if you're headed in the right direction.
 
 ### Installation
 * Using standard git features you may clone, or choose to download as a .zip file.
