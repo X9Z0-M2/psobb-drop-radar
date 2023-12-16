@@ -20,6 +20,17 @@ local function LoadOptions()
     options.configurationEnableWindow = lib_helpers.NotNilOrDefault(options.configurationEnableWindow, true)
     options.enable                    = lib_helpers.NotNilOrDefault(options.enable, true)
     options.ignoreMeseta              = lib_helpers.NotNilOrDefault(options.ignoreMeseta, false)
+    options.reverseItemDirection      = lib_helpers.NotNilOrDefault(options.reverseItemDirection, false)
+    options.clampItemView             = lib_helpers.NotNilOrDefault(options.clampItemView, false)
+    options.invertViewData            = lib_helpers.NotNilOrDefault(options.invertViewData, false)
+    options.invertTickMarkers         = lib_helpers.NotNilOrDefault(options.invertTickMarkers, false)
+    options.customHudColorEnable      = lib_helpers.NotNilOrDefault(options.customHudColorEnable, false)
+    options.customHudColorMarker      = lib_helpers.NotNilOrDefault(options.customHudColorMarker, 0xFFFF9900)
+    options.customHudColorBackground  = lib_helpers.NotNilOrDefault(options.customHudColorBackground, 0x4CCCCCCC)
+    options.customHudColorWindow      = lib_helpers.NotNilOrDefault(options.customHudColorWindow, 0xB2000000)
+    options.viewingConeDegs           = lib_helpers.NotNilOrDefault(options.viewingConeDegs, 90)
+    options.viewHudPrecision          = lib_helpers.NotNilOrDefault(options.viewHudPrecision, 1.0)
+    options.ignoreItemMaxDist         = lib_helpers.NotNilOrDefault(options.ignoreItemMaxDist, 0)
     options.updateThrottle            = lib_helpers.NotNilOrDefault(options.updateThrottle, 0)
     options.server                    = lib_helpers.NotNilOrDefault(options.server, 1)
 
@@ -48,7 +59,6 @@ local function LoadOptions()
     options.hud.sizing.HitMin             = lib_helpers.NotNilOrDefault(options.hud.sizing.HitMin, 40)
     options.hud.sizing.LowHitWeaponsH     = lib_helpers.NotNilOrDefault(options.hud.sizing.LowHitWeaponsH,  10)
     options.hud.sizing.HighHitWeaponsH    = lib_helpers.NotNilOrDefault(options.hud.sizing.HighHitWeaponsH,  86)
-    options.hud.sizing.UselessWeaponsH    = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessWeaponsH,  20)
     options.hud.sizing.UselessArmorsH     = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessArmorsH,  25)
     options.hud.sizing.MaxSocketArmorH    = lib_helpers.NotNilOrDefault(options.hud.sizing.MaxSocketArmorH,  81)
     options.hud.sizing.UselessBarriersH   = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessBarriersH,  25)
@@ -104,14 +114,68 @@ local function LoadOptions()
     options.hud.sizing.MindMatH           = lib_helpers.NotNilOrDefault(options.hud.sizing.MindMatH,  92)
     options.hud.sizing.DefenseMatH        = lib_helpers.NotNilOrDefault(options.hud.sizing.DefenseMatH,  85)
     options.hud.sizing.EvadeMatH          = lib_helpers.NotNilOrDefault(options.hud.sizing.EvadeMatH,  85)
+    options.hud.sizing.ClairesDealEnable  = lib_helpers.NotNilOrDefault(options.hud.sizing.ClairesDealEnable,  false)
     options.hud.sizing.ClairesDealH       = lib_helpers.NotNilOrDefault(options.hud.sizing.ClairesDealH,  92)
+
+    options.hud.sizing.LowHitWeaponsW     = lib_helpers.NotNilOrDefault(options.hud.sizing.LowHitWeaponsW,  0.001)
+    options.hud.sizing.HighHitWeaponsW    = lib_helpers.NotNilOrDefault(options.hud.sizing.HighHitWeaponsW,  0.001)
+    options.hud.sizing.UselessArmorsW     = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessArmorsW,  0.001)
+    options.hud.sizing.MaxSocketArmorW    = lib_helpers.NotNilOrDefault(options.hud.sizing.MaxSocketArmorW,  0.001)
+    options.hud.sizing.UselessBarriersW   = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessBarriersW,  0.001)
+    options.hud.sizing.UselessUnitsW      = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessUnitsW,  0.001)
+    options.hud.sizing.UselessTechsW      = lib_helpers.NotNilOrDefault(options.hud.sizing.UselessTechsW,  0.001)
+    options.hud.sizing.MesetaW            = lib_helpers.NotNilOrDefault(options.hud.sizing.MesetaW, 0.001)
+    options.hud.sizing.WeaponsW           = lib_helpers.NotNilOrDefault(options.hud.sizing.WeaponsW,  0.001)
+    options.hud.sizing.SRankWeaponsW      = lib_helpers.NotNilOrDefault(options.hud.sizing.SRankWeaponsW,  0.001)
+    options.hud.sizing.ArmorsW            = lib_helpers.NotNilOrDefault(options.hud.sizing.ArmorsW,  0.001)
+    options.hud.sizing.BarriersW          = lib_helpers.NotNilOrDefault(options.hud.sizing.BarriersW,  0.001)
+    options.hud.sizing.UnitsW             = lib_helpers.NotNilOrDefault(options.hud.sizing.UnitsW,  0.001)
+    options.hud.sizing.MagsW              = lib_helpers.NotNilOrDefault(options.hud.sizing.MagsW,  0.001)
+    options.hud.sizing.ConsumablesW       = lib_helpers.NotNilOrDefault(options.hud.sizing.ConsumablesW,  0.001)
+    options.hud.sizing.TechReverserW      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechReverserW,  0.001)
+    options.hud.sizing.TechRyukerW        = lib_helpers.NotNilOrDefault(options.hud.sizing.TechRyukerW,  0.001)
+    options.hud.sizing.TechMegidW         = lib_helpers.NotNilOrDefault(options.hud.sizing.TechMegidW,  0.001)
+    options.hud.sizing.TechMegidMin       = lib_helpers.NotNilOrDefault(options.hud.sizing.TechMegidMin,  0.001)
+    options.hud.sizing.TechGrantsW        = lib_helpers.NotNilOrDefault(options.hud.sizing.TechGrantsW,  0.001)
+    options.hud.sizing.TechAnti5W         = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAnti5W,  0.001)
+    options.hud.sizing.TechAnti7W         = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAnti7W,  0.001)
+    options.hud.sizing.TechSupport15W     = lib_helpers.NotNilOrDefault(options.hud.sizing.TechSupport15W,  0.001)
+    options.hud.sizing.TechSupport20W     = lib_helpers.NotNilOrDefault(options.hud.sizing.TechSupport20W,  0.001)
+    options.hud.sizing.TechSupport30W     = lib_helpers.NotNilOrDefault(options.hud.sizing.TechSupport30W,  0.001)
+    options.hud.sizing.TechAttack15W      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAttack15W,  0.001)
+    options.hud.sizing.TechAttack20W      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAttack20W,  0.001)
+    options.hud.sizing.TechAttack30W      = lib_helpers.NotNilOrDefault(options.hud.sizing.TechAttack30W,  0.001)
+    options.hud.sizing.MonomateW          = lib_helpers.NotNilOrDefault(options.hud.sizing.MonomateW,  0.001)
+    options.hud.sizing.DimateW            = lib_helpers.NotNilOrDefault(options.hud.sizing.DimateW,  0.001)
+    options.hud.sizing.TrimateW           = lib_helpers.NotNilOrDefault(options.hud.sizing.TrimateW,  0.001)
+    options.hud.sizing.MonofluidW         = lib_helpers.NotNilOrDefault(options.hud.sizing.MonofluidW,  0.001)
+    options.hud.sizing.DifluidW           = lib_helpers.NotNilOrDefault(options.hud.sizing.DifluidW,  0.001)
+    options.hud.sizing.TrifluidW          = lib_helpers.NotNilOrDefault(options.hud.sizing.TrifluidW,  0.001)
+    options.hud.sizing.SolAtomizerW       = lib_helpers.NotNilOrDefault(options.hud.sizing.SolAtomizerW,  0.001)
+    options.hud.sizing.MoonAtomizerW      = lib_helpers.NotNilOrDefault(options.hud.sizing.MoonAtomizerW,  0.001)
+    options.hud.sizing.StarAtomizerW      = lib_helpers.NotNilOrDefault(options.hud.sizing.StarAtomizerW,  0.001)
+    options.hud.sizing.AntidoteW          = lib_helpers.NotNilOrDefault(options.hud.sizing.AntidoteW,  0.001)
+    options.hud.sizing.AntiparalysisW     = lib_helpers.NotNilOrDefault(options.hud.sizing.AntiparalysisW,  0.001)
+    options.hud.sizing.TelepipeW          = lib_helpers.NotNilOrDefault(options.hud.sizing.TelepipeW,  0.001)
+    options.hud.sizing.TrapVisionW        = lib_helpers.NotNilOrDefault(options.hud.sizing.TrapVisionW,  0.001)
+    options.hud.sizing.ScapeDollW         = lib_helpers.NotNilOrDefault(options.hud.sizing.ScapeDollW,  0.001)
+    options.hud.sizing.MonogrinderW       = lib_helpers.NotNilOrDefault(options.hud.sizing.MonogrinderW,  0.001)
+    options.hud.sizing.DigrinderW         = lib_helpers.NotNilOrDefault(options.hud.sizing.DigrinderW,  0.001)
+    options.hud.sizing.TrigrinderW        = lib_helpers.NotNilOrDefault(options.hud.sizing.TrigrinderW,  0.001)
+    options.hud.sizing.HPMatW             = lib_helpers.NotNilOrDefault(options.hud.sizing.HPMatW,  0.001)
+    options.hud.sizing.PowerMatW          = lib_helpers.NotNilOrDefault(options.hud.sizing.PowerMatW,  0.001)
+    options.hud.sizing.LuckMatW           = lib_helpers.NotNilOrDefault(options.hud.sizing.LuckMatW,  0.001)
+    options.hud.sizing.MindMatW           = lib_helpers.NotNilOrDefault(options.hud.sizing.MindMatW,  0.001)
+    options.hud.sizing.DefenseMatW        = lib_helpers.NotNilOrDefault(options.hud.sizing.DefenseMatW,  0.001)
+    options.hud.sizing.EvadeMatW          = lib_helpers.NotNilOrDefault(options.hud.sizing.EvadeMatW,  0.001)
+    options.hud.sizing.ClairesDealW       = lib_helpers.NotNilOrDefault(options.hud.sizing.ClairesDealW,  0.001)
 end
 LoadOptions()
 
 -- Append server specific items
 lib_items_list.AddServerItems(options.server)
 
-local stringBuilder = ""
+local optionsStringBuilder = ""
 local function BuildOptionsString(table, depth)
     local tabSpacing = 4
     local maxDepth = 5
@@ -123,35 +187,40 @@ local function BuildOptionsString(table, depth)
     
     --begin statement
     if depth < 1 then
-        stringBuilder = "return\n{\n"
+        optionsStringBuilder = "return\n{\n"
     end
     --iterate over table
     for key, value in pairs(table) do
         
         local type = type(value)
         if type == "string" then
-            stringBuilder = stringBuilder .. spaces .. string.format("%s = \"%s\",\n", key, tostring(value))
+            optionsStringBuilder = optionsStringBuilder .. spaces .. string.format("%s = \"%s\",\n", key, tostring(value))
         
         elseif type == "number" then
-            stringBuilder = stringBuilder .. spaces .. string.format("%s = %i,\n", key, tostring(value))
+            -- check is float/double
+            if value % 1 == 0 then
+                optionsStringBuilder = optionsStringBuilder .. spaces .. string.format("%s = %i,\n", key, tostring(value))
+            else
+                optionsStringBuilder = optionsStringBuilder .. spaces .. string.format("%s = %f,\n", key, tostring(value))
+            end
             
         elseif type == "boolean" or value == nil then
-            stringBuilder = stringBuilder .. spaces .. string.format("%s = %s,\n", key, tostring(value))
+            optionsStringBuilder = optionsStringBuilder .. spaces .. string.format("%s = %s,\n", key, tostring(value))
             
         --recurse
         elseif type == "table" then
             if maxDepth > 5 then
                 return
             end
-            stringBuilder = stringBuilder .. spaces .. string.format("%s = {\n", key)
+            optionsStringBuilder = optionsStringBuilder .. spaces .. string.format("%s = {\n", key)
             BuildOptionsString(value, depth + 1)
-            stringBuilder = stringBuilder .. spaces .. string.format("},\n", key)
+            optionsStringBuilder = optionsStringBuilder .. spaces .. string.format("},\n", key)
         end
         
     end
     --finalize statement
     if depth < 1 then
-        stringBuilder = stringBuilder .. "}\n"
+        optionsStringBuilder = optionsStringBuilder .. "}\n"
     end
 end
 
@@ -161,7 +230,7 @@ local function SaveOptions(options)
         BuildOptionsString(options)
         
         io.output(file)
-        io.write(stringBuilder)
+        io.write(optionsStringBuilder)
         io.close(file)
     end
 end
@@ -172,40 +241,43 @@ local playerSelfCoords = nil
 local playerSelfDirs = nil
 local playerSelfNormDir = nil
 local item_graph_data = {}
+local item_graph_size = 200
 local toolLookupTable = {}
 
-function updateToolLookupTable()
+local function updateToolLookupTable()
     toolLookupTable = {
         [0x00] = {
-            [0x00] = {options.hud.sizing.MonomateH, "Monomate"},
-            [0x01] = {options.hud.sizing.DimateH, "Dimate"},
-            [0x02] = {options.hud.sizing.TrimateH, "Trimate"},
+            [0x00] = {options.hud.sizing.MonomateW, options.hud.sizing.MonomateH, "Monomate"},
+            [0x01] = {options.hud.sizing.DimateW, options.hud.sizing.DimateH, "Dimate"},
+            [0x02] = {options.hud.sizing.TrimateW, options.hud.sizing.TrimateH, "Trimate"},
         },
         [0x01] = {
-            [0x00] = {options.hud.sizing.MonofluidH, "Monofluid"},
-            [0x01] = {options.hud.sizing.DifluidH, "Difluid"},
-            [0x02] = {options.hud.sizing.TrifluidH, "Trifluid"},
+            [0x00] = {options.hud.sizing.MonofluidW, options.hud.sizing.MonofluidH, "Monofluid"},
+            [0x01] = {options.hud.sizing.DifluidW, options.hud.sizing.DifluidH, "Difluid"},
+            [0x02] = {options.hud.sizing.TrifluidW, options.hud.sizing.TrifluidH, "Trifluid"},
         },
-        [0x03] = { [0x00] = {options.hud.sizing.SolAtomizerH, "SolAtomizer"} },
-        [0x04] = { [0x00] = {options.hud.sizing.MoonAtomizerH, "MoonAtomizer"} },
-        [0x05] = { [0x00] = {options.hud.sizing.StarAtomizerH, "StarAtomizer"} },
-        [0x06] = { [0x00] = {options.hud.sizing.AntidoteH, "Antidote"} },
-        [0x06] = { [0x01] = {options.hud.sizing.AntiparalysisH, "Antiparalysis"} },
-        [0x07] = { [0x00] = {options.hud.sizing.TelepipeH, "Telepipe"} },
-        [0x08] = { [0x00] = {options.hud.sizing.TrapVisionH, "TrapVision"} },
-        [0x09] = { [0x00] = {options.hud.sizing.ScapeDollH, "ScapeDoll"} },
+        [0x03] = { [0x00] = {options.hud.sizing.SolAtomizerW, options.hud.sizing.SolAtomizerH, "SolAtomizer"} },
+        [0x04] = { [0x00] = {options.hud.sizing.MoonAtomizerW, options.hud.sizing.MoonAtomizerH, "MoonAtomizer"} },
+        [0x05] = { [0x00] = {options.hud.sizing.StarAtomizerW, options.hud.sizing.StarAtomizerH, "StarAtomizer"} },
+        [0x06] = {
+            [0x00] = {options.hud.sizing.AntidoteW, options.hud.sizing.AntidoteH, "Antidote"},
+            [0x01] = {options.hud.sizing.AntiparalysisW, options.hud.sizing.AntiparalysisH, "Antiparalysis"},
+        },
+        [0x07] = { [0x00] = {options.hud.sizing.TelepipeW, options.hud.sizing.TelepipeH, "Telepipe"} },
+        [0x08] = { [0x00] = {options.hud.sizing.TrapVisionW, options.hud.sizing.TrapVisionH, "TrapVision"} },
+        [0x09] = { [0x00] = {options.hud.sizing.ScapeDollW, options.hud.sizing.ScapeDollH, "ScapeDoll"} },
         [0x0A] = {
-            [0x00] = {options.hud.sizing.MonogrinderH, "Monogrinder"},
-            [0x01] = {options.hud.sizing.DigrinderH, "Digrinder"},
-            [0x02] = {options.hud.sizing.TrigrinderH, "Trigrinder"},
+            [0x00] = {options.hud.sizing.MonogrinderW, options.hud.sizing.MonogrinderH, "Monogrinder"},
+            [0x01] = {options.hud.sizing.DigrinderW, options.hud.sizing.DigrinderH, "Digrinder"},
+            [0x02] = {options.hud.sizing.TrigrinderW, options.hud.sizing.TrigrinderH, "Trigrinder"},
         },
         [0x0B] = {
-            [0x00] = {options.hud.sizing.PowerMatH, "PowerMat"},
-            [0x01] = {options.hud.sizing.MindMatH, "MindMat"},
-            [0x02] = {options.hud.sizing.EvadeMatH, "EvadeMat"},
-            [0x00] = {options.hud.sizing.HPMatH, "HPMat"},
-            [0x01] = {options.hud.sizing.DefenseMatH, "DefenseMat"},
-            [0x02] = {options.hud.sizing.LuckMatH, "LuckMat"},
+            [0x00] = {options.hud.sizing.PowerMatW, options.hud.sizing.PowerMatH, "PowerMat"},
+            [0x01] = {options.hud.sizing.MindMatW, options.hud.sizing.MindMatH, "MindMat"},
+            [0x02] = {options.hud.sizing.EvadeMatW, options.hud.sizing.EvadeMatH, "EvadeMat"},
+            [0x00] = {options.hud.sizing.HPMatW, options.hud.sizing.HPMatH, "HPMat"},
+            [0x01] = {options.hud.sizing.DefenseMatW, options.hud.sizing.DefenseMatH, "DefenseMat"},
+            [0x02] = {options.hud.sizing.LuckMatW, options.hud.sizing.LuckMatH, "LuckMat"},
         },
     }
 end
@@ -253,6 +325,10 @@ local function NormalizeVec2(vec2)
     }
 end
 
+local function DistanceVec2(vec2Ax,vec2Az,vec2Bx,vec2Bz)
+    return math.sqrt( math.pow(vec2Ax - vec2Bx,2) + math.pow(vec2Az - vec2Bz,2) )
+end
+
 local function clampVal(clamp, min, max)
     return clamp < min and min or clamp > max and max or clamp
 end
@@ -264,12 +340,34 @@ local function Lerp(Norm,Min,Max)
     return (Max - Min) * Norm + Min
 end
 
-local function ItemAppendGraphData(val,item)
-    if val <1 then return end
+local function shiftHexColor(color)
+    return
+    {
+        bit.band(bit.rshift(color, 24), 0xFF),
+        bit.band(bit.rshift(color, 16), 0xFF),
+        bit.band(bit.rshift(color, 8), 0xFF),
+        bit.band(color, 0xFF)
+    }
+end
+
+local function ItemAppendGraphData(size,val,item)
+    if val <1 or size == 0 or options.viewingConeDegs == 0 then return end
+
+    if options.invertViewData then
+        val = 100-val
+    end
+
     local itemDir = {
         x = item.posx - playerSelfCoords.x,
         z = item.posz - playerSelfCoords.z,
     }
+    -- ignore if item is too far away
+    if options.ignoreItemMaxDist > 0 then
+        if math.sqrt(itemDir.x^2 + itemDir.z^2) > options.ignoreItemMaxDist then
+            return
+        end
+    end
+
     local itemNormDir = NormalizeVec2(itemDir)
 
     local itemFacing = {
@@ -277,13 +375,43 @@ local function ItemAppendGraphData(val,item)
         z = (itemNormDir.z - playerSelfNormDir.z) / 2,
     }
     --local itemLocalFacing = math.asin( itemNormDir.x * playerSelfNormDir.x + itemNormDir.z * playerSelfNormDir.z ) * 180/math.pi
-    local itemLocalFacing = math.atan2(  playerSelfNormDir.z, playerSelfNormDir.x ) - math.atan2(  itemNormDir.z, itemNormDir.x )
+    local itemLocalFacing
+    if options.reverseItemDirection then
+        itemLocalFacing = math.atan2(  playerSelfNormDir.z, playerSelfNormDir.x ) - math.atan2(  itemNormDir.z, itemNormDir.x )
+    else
+        itemLocalFacing = math.atan2(  itemNormDir.z, itemNormDir.x ) - math.atan2(  playerSelfNormDir.z, playerSelfNormDir.x )
+    end
     if itemLocalFacing > math.pi then itemLocalFacing = itemLocalFacing - math.pi*2 end
     if itemLocalFacing < -math.pi then itemLocalFacing = itemLocalFacing + math.pi*2 end
 
-    itemLocalFacing = clampVal( clampVal( math.floor(itemLocalFacing * 180/math.pi) , -90, 90) + 90, 1, 180 )
+    local itemFacingDegs = itemLocalFacing * 180/math.pi
+    if options.clampItemView then
+        itemFacingDegs = clampVal( itemFacingDegs , -options.viewingConeDegs, options.viewingConeDegs)
+    else
+        if itemFacingDegs > options.viewingConeDegs or itemFacingDegs < -options.viewingConeDegs then
+            return
+        end
+    end
 
-    item_graph_data[ itemLocalFacing ] = val
+    itemFacingDegs = clampVal(
+        math.floor(
+            Lerp(Norm(itemFacingDegs,-options.viewingConeDegs,options.viewingConeDegs), 1, item_graph_size)
+        ),
+        1, item_graph_size)
+
+    local dataCutoff = Lerp(Norm(size,0.001,5), 1, item_graph_size*0.05)
+    item_graph_data[ itemFacingDegs ] = val
+    for i=2, item_graph_size do
+        if i < dataCutoff then
+            if i % 2 > 0 then
+                item_graph_data[ itemFacingDegs - math.floor((i)/2) ] = val
+            else
+                item_graph_data[ itemFacingDegs + math.floor((i)/2) ] = val
+            end
+        else
+            break
+        end
+    end
 end
 
 
@@ -293,21 +421,20 @@ local function ProcessWeapon(item, floor)
 
     if item.weapon.isSRank == false then
         if item_cfg ~= nil and item_cfg[1] ~= 0 then
-            ItemAppendGraphData( options.hud.sizing.WeaponsH, item )
+            ItemAppendGraphData( options.hud.sizing.WeaponsW, options.hud.sizing.WeaponsH, item )
         elseif floor then
             -- Hide weapon drops with less then xxHit (40 default) untekked
             if item.weapon.stats[6] >= options.hud.sizing.HitMin then
-                ItemAppendGraphData( options.hud.sizing.HighHitWeaponsH ,item)
-            end
+                ItemAppendGraphData( options.hud.sizing.HighHitWeaponsW, options.hud.sizing.HighHitWeaponsH, item)
             -- Show Claire's Deal 5 items
-            if lib_claires_deal.IsClairesDealItem(item) then
-                ItemAppendGraphData( options.hud.sizing.ClairesDealH, item )
-            end
-        else
-            ItemAppendGraphData( options.hud.sizing.UselessWeaponsH, item )
+            elseif options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+                ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
+            elseif item.weapon.stats[6] < options.hud.sizing.HitMin then
+                ItemAppendGraphData( options.hud.sizing.LowHitWeaponsW, options.hud.sizing.LowHitWeaponsH, item )
+            end            
         end
     else
-        ItemAppendGraphData( options.hud.sizing.WeaponsH, item )
+        ItemAppendGraphData( options.hud.sizing.SRankWeaponsW, options.hud.sizing.SRankWeaponsH, item )
     end
 end
 
@@ -320,12 +447,12 @@ local function ProcessFrame(item, floor)
     elseif floor then
         -- Show 4 socket armors
         if item.armor.slots == 4 then
-            ItemAppendGraphData( options.hud.sizing.MaxSocketArmorH, item )
+            ItemAppendGraphData( options.hud.sizing.MaxSocketArmorW, options.hud.sizing.MaxSocketArmorH, item )
         -- Show Claire's Deal 5 items
-        elseif lib_claires_deal.IsClairesDealItem(item) then
-            ItemAppendGraphData( options.hud.sizing.ClairesDealH, item )
+        elseif options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+            ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
         else
-            ItemAppendGraphData( options.hud.sizing.UselessArmorsH, item )
+            ItemAppendGraphData( options.hud.sizing.UselessArmorsW, options.hud.sizing.UselessArmorsH, item )
         end
     end
 end
@@ -334,13 +461,13 @@ local function ProcessBarrier(item, floor)
     local item_cfg = lib_items_list.t[item.hex]
 
     if item_cfg ~= nil and item_cfg[1] ~= 0 then
-        ItemAppendGraphData( options.hud.sizing.BarriersH, item )
+        ItemAppendGraphData( options.hud.sizing.BarriersW, options.hud.sizing.BarriersH, item )
     elseif floor then
         -- Show Claire's Deal 5 items
-        if lib_claires_deal.IsClairesDealItem(item) then
-            ItemAppendGraphData( options.hud.sizing.ClairesDealH, item )
+        if options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+            ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
         else
-            ItemAppendGraphData( options.hud.sizing.UselessBarriersH, item )
+            ItemAppendGraphData( options.hud.sizing.UselessBarriersW, options.hud.sizing.UselessBarriersH, item )
         end
     end
 end
@@ -349,18 +476,18 @@ local function ProcessUnit(item, floor)
     local item_cfg = lib_items_list.t[item.hex]
 
     if item_cfg ~= nil and item_cfg[1] ~= 0 then
-        ItemAppendGraphData( options.hud.sizing.UnitsH, item )
+        ItemAppendGraphData( options.hud.sizing.UnitsW, options.hud.sizing.UnitsH, item )
     elseif floor then
         -- Show Claire's Deal 5 items
-        if lib_claires_deal.IsClairesDealItem(item) then
-            ItemAppendGraphData( options.hud.sizing.ClairesDealH, item )
+        if options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+            ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
         else
-            ItemAppendGraphData( options.hud.sizing.UselessUnitsH, item )
+            ItemAppendGraphData( options.hud.sizing.UselessUnitsW, options.hud.sizing.UselessUnitsH, item )
         end
     end
 end
 local function ProcessMag(item, fromMagWindow)
-    ItemAppendGraphData( options.hud.sizing.MagsH, item )
+    ItemAppendGraphData( options.hud.sizing.MagsW, options.hud.sizing.MagsH, item )
 end
 
 local function ProcessTool(item, floor)
@@ -383,67 +510,68 @@ local function ProcessTool(item, floor)
         if item.data[2] == 0x02 then
             -- Is Reverser/Ryuker
             if item.data[5] == 0x11 then
-                ItemAppendGraphData( options.hud.sizing.TechReverserH, item )
+                ItemAppendGraphData( options.hud.sizing.TechReverserW, options.hud.sizing.TechReverserH, item )
             elseif item.data[5] == 0x0E then
-                ItemAppendGraphData( options.hud.sizing.TechRyukerH, item )
+                ItemAppendGraphData( options.hud.sizing.TechRyukerW, options.hud.sizing.TechRyukerH, item )
             -- Is Good Anti?
             elseif item.data[5] == 0x10 then
                 if item.tool.level == 5 then
-                    ItemAppendGraphData( options.hud.sizing.TechAnti5H, item )
+                    ItemAppendGraphData( options.hud.sizing.TechAnti5W, options.hud.sizing.TechAnti5H, item )
                 elseif item.tool.level >= 7 then
-                    ItemAppendGraphData( options.hud.sizing.TechAnti7H, item )
+                    ItemAppendGraphData( options.hud.sizing.TechAnti7W, options.hud.sizing.TechAnti7H, item )
                 else
-                    ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
+                    ItemAppendGraphData( options.hud.sizing.UselessTechsW, options.hud.sizing.UselessTechsH, item )
                 end
             -- Is Good Megid/Grants
             elseif item.data[5] == 0x12 then
                 if item.tool.level >= options.hud.sizing.TechMegidMin then
-                    ItemAppendGraphData( options.hud.sizing.TechMegidH, item )
+                    ItemAppendGraphData( options.hud.sizing.TechMegidW, options.hud.sizing.TechMegidH, item )
                 else
-                    ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
+                    ItemAppendGraphData( options.hud.sizing.UselessTechsW, options.hud.sizing.UselessTechsH, item )
                 end
             elseif item.data[5] == 0x09 then
                 if item.tool.level >= options.hud.sizing.TechGrantsMin then
-                    ItemAppendGraphData( options.hud.sizing.TechGrantsH, item )
+                    ItemAppendGraphData( options.hud.sizing.TechGrantsW, options.hud.sizing.TechGrantsH, item )
                 else
-                    ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
+                    ItemAppendGraphData( options.hud.sizing.UselessTechsW, options.hud.sizing.UselessTechsH, item )
                 end
             -- Is good support spell
             elseif item.data[5] == 0x0A or item.data[5] == 0x0B or item.data[5] == 0x0C or item.data[5] == 0x0D or item.data[5] == 0x0F then
                 if item.tool.level >= options.hud.sizing.TechSupportMin then
-                    ItemAppendGraphData( options.hud.sizing.TechSupport30H, item )
+                    ItemAppendGraphData( options.hud.sizing.TechSupport30W, options.hud.sizing.TechSupport30H, item )
                 elseif item.tool.level == 15 then
-                    ItemAppendGraphData( options.hud.sizing.TechSupport15H, item )
+                    ItemAppendGraphData( options.hud.sizing.TechSupport15W, options.hud.sizing.TechSupport15H, item )
                 elseif item.tool.level == 20 then
-                    ItemAppendGraphData( options.hud.sizing.TechSupport20H, item )
+                    ItemAppendGraphData( options.hud.sizing.TechSupport20W, options.hud.sizing.TechSupport20H, item )
                 else
-                    ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
+                    ItemAppendGraphData( options.hud.sizing.UselessTechsW, options.hud.sizing.UselessTechsH, item )
                 end
             -- Is a max tier tech?
             elseif item.tool.level >= options.hud.sizing.TechAttackMin then
-                ItemAppendGraphData( options.hud.sizing.TechAttack30H, item )
+                ItemAppendGraphData( options.hud.sizing.TechAttack30W, options.hud.sizing.TechAttack30H, item )
             elseif item.tool.level == 15 then
-                ItemAppendGraphData( options.hud.sizing.TechAttack15H, item )
+                ItemAppendGraphData( options.hud.sizing.TechAttack15W, options.hud.sizing.TechAttack15H, item )
             elseif item.tool.level == 20 then
-                ItemAppendGraphData( options.hud.sizing.TechAttack20H, item )
+                ItemAppendGraphData( options.hud.sizing.TechAttack20W, options.hud.sizing.TechAttack20H, item )
             else
-                ItemAppendGraphData( options.hud.sizing.UselessTechsH, item )
+                ItemAppendGraphData( options.hud.sizing.UselessTechsW, options.hud.sizing.UselessTechsH, item )
             end
 
         -- Hide Monomates, Dimates, Monofluids, Difluids, Antidotes, Antiparalysis, Telepipe, and Trap Visions
-        elseif item.data[2] ~= nil and item.data[3] ~= nil and
-                toolLookupTable[item.data[2]] ~= nil and 
+        elseif  toolLookupTable[item.data[2]] ~= nil and 
                 toolLookupTable[item.data[2]][item.data[3]] ~= nil and 
-                toolLookupTable[item.data[2]][item.data[3]][1] then
+                toolLookupTable[item.data[2]][item.data[3]][2] then
             -- Show Claire's Deal 5 items
-            if lib_claires_deal.IsClairesDealItem(item) then
-                ItemAppendGraphData( options.hud.sizing.ClairesDealH, item )
+            if options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+                ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
             else
                 local toolLookup = toolLookupTable[item.data[2]][item.data[3]]
-                ItemAppendGraphData( toolLookup[1] ~= nil and toolLookup[1] or options.hud.sizing.TechsH, item )
+                if toolLookup[1] ~= nil and toolLookup[2] ~= nil then
+                    ItemAppendGraphData( toolLookup[1], toolLookup[2], item )
+                end
             end
         else
-            ItemAppendGraphData( options.hud.sizing.ConsumablesH, item )
+            ItemAppendGraphData( options.hud.sizing.ConsumablesW, options.hud.sizing.ConsumablesH, item )
         end
     end
 end
@@ -451,7 +579,7 @@ local function ProcessMeseta(item)
     if options.ignoreMeseta == false then
         if item.meseta >= options.hud.sizing.MesetaMin then
             local norm = Norm(item.meseta, options.hud.sizing.MesetaMin, options.hud.sizing.MesetaMax)
-            ItemAppendGraphData( Lerp( norm, options.hud.sizing.MesetaMinH, options.hud.sizing.MesetaMaxH), item )
+            ItemAppendGraphData( options.hud.sizing.MesetaW, clampVal( Lerp( norm, options.hud.sizing.MesetaMinH, options.hud.sizing.MesetaMaxH), 0, 100 ), item )
         end
     end
 end
@@ -491,15 +619,8 @@ end
 
 local update_delay = (options.updateThrottle * 1000)
 local current_time = 0
-local last_inventory_index = -1
-local last_inventory_time = 0
-local cache_inventory = nil
-local last_bank_time = 0
-local cache_bank = nil
 local last_floor_time = 0
 local cache_floor = nil
-local last_mags_time = 0
-local cache_mags = nil
 
 local function PresentHud()
 
@@ -516,20 +637,38 @@ local function PresentHud()
     playerSelfDirs    = GetPlayerDirection(playerSelfAddr)
     playerSelfNormDir = NormalizeVec2(playerSelfDirs)
     item_graph_data  = {}
+    item_graph_size = clampVal( math.floor( options.hud.W / 2 * options.viewHudPrecision ), 1, 2000 ) -- histogram likes 2 pixels per bar, so if 1000 wide, then 500 table entries will visibly not show any gaps.
 
-    for i=1, 180 do
-        table.insert(item_graph_data, 0)
+    if options.invertViewData then
+        for i=1, item_graph_size do
+            table.insert(item_graph_data, 100)
+        end
+    else
+        for i=1, item_graph_size do
+            table.insert(item_graph_data, 0)
+        end
     end
-    item_graph_data[60] = 5
-    item_graph_data[90] = 10
-    item_graph_data[120] = 5
+
+    if options.invertTickMarkers then
+        item_graph_data[math.floor(Lerp(0.3,1,item_graph_size))] = 95
+        item_graph_data[math.floor(Lerp(0.5,1,item_graph_size))] = 90
+        item_graph_data[math.floor(Lerp(0.7,1,item_graph_size))] = 95
+    else
+        item_graph_data[math.floor(Lerp(0.3,1,item_graph_size))] = 5
+        item_graph_data[math.floor(Lerp(0.5,1,item_graph_size))] = 10
+        item_graph_data[math.floor(Lerp(0.7,1,item_graph_size))] = 5
+    end
 
     for i=1,itemCount,1 do
         local item = cache_floor[i]
         ProcessItem(cache_floor[i], true, false)
     end
 
-    imgui.PlotHistogram("", item_graph_data, 180, 0, "", 0,100, options.hud.W-16, options.hud.H-14);
+    if options.hud.NoTitleBar == "" then
+        imgui.PlotHistogram("", item_graph_data, item_graph_size, 0, "", 0,100, options.hud.W-16, options.hud.H-34);
+    else
+        imgui.PlotHistogram("", item_graph_data, item_graph_size, 0, "", 0,100, options.hud.W-16, options.hud.H-14);
+    end
 end
 
 
@@ -565,9 +704,19 @@ local function present()
     then
         local windowName = "Drop Radar"
 
+        if options.customHudColorEnable == true then
+            local PlotHistogramColor = shiftHexColor(options.customHudColorMarker)
+            local FrameBgColor = shiftHexColor(options.customHudColorBackground)
+            local WindowBgColor = shiftHexColor(options.customHudColorWindow)
+            imgui.PushStyleColor("PlotHistogram", PlotHistogramColor[2]/255, PlotHistogramColor[3]/255, PlotHistogramColor[4]/255, PlotHistogramColor[1]/255)
+            imgui.PushStyleColor("FrameBg", FrameBgColor[2]/255, FrameBgColor[3]/255, FrameBgColor[4]/255, FrameBgColor[1]/255)
+            imgui.PushStyleColor("WindowBg", WindowBgColor[2]/255, WindowBgColor[3]/255, WindowBgColor[4]/255, WindowBgColor[1]/255)
+        end
+
         if options.hud.TransparentWindow == true then
             imgui.PushStyleColor("WindowBg", 0.0, 0.0, 0.0, 0.0)
         end
+
 
         if options.hud.AlwaysAutoResize == "AlwaysAutoResize" then
             imgui.SetNextWindowSizeConstraints(0, 0, options.hud.W, options.hud.H)
@@ -595,6 +744,11 @@ local function present()
         end
         imgui.End()
 
+        if options.customHudColorEnable == true then
+            imgui.PopStyleColor()
+            imgui.PopStyleColor()
+            imgui.PopStyleColor()
+        end
         if options.hud.TransparentWindow == true then
             imgui.PopStyleColor()
         end
@@ -616,8 +770,8 @@ local function init()
     return
     {
         name = "Drop Radar",
-        version = "0.0.1",
-        author = "X9Z0",
+        version = "0.1.0",
+        author = "X9Z0.M2",
         description = "Directional Indicators to Important Drops",
         present = present,
     }
