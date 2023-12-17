@@ -351,6 +351,16 @@ local function shiftHexColor(color)
 end
 
 local function ItemAppendGraphData(size,val,item)
+    if not item then return end
+    -- --debug
+    -- if type(size) == "table" or type(val) == "table" then
+    --     print(tostring(size))
+    --     print(tostring(val))
+    --     print(tostring(item))
+    --     print(item)
+    --     print(item.name)
+    -- end
+    -- --eof
     if val <1 or size == 0 or options.viewingConeDegs == 0 then return end
 
     if options.invertViewData then
@@ -443,7 +453,7 @@ local function ProcessFrame(item, floor)
     local item_cfg = lib_items_list.t[item.hex]
 
     if item_cfg ~= nil and item_cfg[1] ~= 0 then
-        ItemAppendGraphData( options.hud.sizing.ArmorsH, item )
+        ItemAppendGraphData( options.hud.sizing.ArmorsW, options.hud.sizing.ArmorsH, item )
     elseif floor then
         -- Show 4 socket armors
         if item.armor.slots == 4 then
@@ -770,7 +780,7 @@ local function init()
     return
     {
         name = "Drop Radar",
-        version = "0.1.0",
+        version = "0.1.1",
         author = "X9Z0.M2",
         description = "Directional Indicators to Important Drops",
         present = present,
