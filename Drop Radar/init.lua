@@ -780,7 +780,7 @@ local function init()
     return
     {
         name = "Drop Radar",
-        version = "0.1.1",
+        version = "0.1.2",
         author = "X9Z0.M2",
         description = "Directional Indicators to Important Drops",
         present = present,

@@ -17,7 +17,7 @@ end
 local function ConfigurationWindow(configuration)
     local this =
     {
-        title = "Drop Map - Configuration",
+        title = "Drop Radar - Configuration",
         open = false,
         changed = false,
     }
