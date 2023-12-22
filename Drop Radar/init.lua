@@ -361,6 +361,11 @@ local function ItemAppendGraphData(size,val,item)
     --     print(item.name)
     -- end
     -- --eof
+
+    item.posx = pso.read_f32(item.address + 0x38)
+    --item.posy = pso.read_f32(item.address + 0x3C)
+    item.posz = pso.read_f32(item.address + 0x40)
+
     if val <1 or size == 0 or options.viewingConeDegs == 0 then return end
 
     if options.invertViewData then
@@ -780,7 +785,7 @@ local function init()
     return
     {
         name = "Drop Radar",
-        version = "0.1.2",
+        version = "0.1.3",
         author = "X9Z0.M2",
         description = "Directional Indicators to Important Drops",
         present = present,
