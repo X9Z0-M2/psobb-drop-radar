@@ -5,7 +5,7 @@ local lib_items = require("solylib.items.items")
 local lib_menu = require("solylib.menu")
 local lib_items_list = require("solylib.items.items_list")
 local lib_items_cfg = require("solylib.items.items_configuration")
-local lib_claires_deal = require("solylib.items.claires_deal")
+local clairesDealLoaded, lib_claires_deal = pcall(require, "solylib.items.claires_deal")
 local cfg = require("Drop Radar.configuration")
 local optionsLoaded, options = pcall(require, "Drop Radar.options")
 
@@ -442,7 +442,7 @@ local function ProcessWeapon(item, floor)
             if item.weapon.stats[6] >= options.hud.sizing.HitMin then
                 ItemAppendGraphData( options.hud.sizing.HighHitWeaponsW, options.hud.sizing.HighHitWeaponsH, item)
             -- Show Claire's Deal 5 items
-            elseif options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+            elseif options.hud.sizing.ClairesDealEnable and clairesDealLoaded and lib_claires_deal.IsClairesDealItem(item) then
                 ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
             elseif item.weapon.stats[6] < options.hud.sizing.HitMin then
                 ItemAppendGraphData( options.hud.sizing.LowHitWeaponsW, options.hud.sizing.LowHitWeaponsH, item )
@@ -464,7 +464,7 @@ local function ProcessFrame(item, floor)
         if item.armor.slots == 4 then
             ItemAppendGraphData( options.hud.sizing.MaxSocketArmorW, options.hud.sizing.MaxSocketArmorH, item )
         -- Show Claire's Deal 5 items
-        elseif options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+        elseif options.hud.sizing.ClairesDealEnable and clairesDealLoaded and lib_claires_deal.IsClairesDealItem(item) then
             ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
         else
             ItemAppendGraphData( options.hud.sizing.UselessArmorsW, options.hud.sizing.UselessArmorsH, item )
@@ -479,7 +479,7 @@ local function ProcessBarrier(item, floor)
         ItemAppendGraphData( options.hud.sizing.BarriersW, options.hud.sizing.BarriersH, item )
     elseif floor then
         -- Show Claire's Deal 5 items
-        if options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+        if options.hud.sizing.ClairesDealEnable and clairesDealLoaded and lib_claires_deal.IsClairesDealItem(item) then
             ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
         else
             ItemAppendGraphData( options.hud.sizing.UselessBarriersW, options.hud.sizing.UselessBarriersH, item )
@@ -494,7 +494,7 @@ local function ProcessUnit(item, floor)
         ItemAppendGraphData( options.hud.sizing.UnitsW, options.hud.sizing.UnitsH, item )
     elseif floor then
         -- Show Claire's Deal 5 items
-        if options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+        if options.hud.sizing.ClairesDealEnable and clairesDealLoaded and lib_claires_deal.IsClairesDealItem(item) then
             ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
         else
             ItemAppendGraphData( options.hud.sizing.UselessUnitsW, options.hud.sizing.UselessUnitsH, item )
@@ -577,7 +577,7 @@ local function ProcessTool(item, floor)
                 toolLookupTable[item.data[2]][item.data[3]] ~= nil and 
                 toolLookupTable[item.data[2]][item.data[3]][2] then
             -- Show Claire's Deal 5 items
-            if options.hud.sizing.ClairesDealEnable and lib_claires_deal.IsClairesDealItem(item) then
+            if options.hud.sizing.ClairesDealEnable and clairesDealLoaded and lib_claires_deal.IsClairesDealItem(item) then
                 ItemAppendGraphData( options.hud.sizing.ClairesDealW, options.hud.sizing.ClairesDealH, item )
             else
                 local toolLookup = toolLookupTable[item.data[2]][item.data[3]]
@@ -785,7 +785,7 @@ local function init()
     return
     {
         name = "Drop Radar",
-        version = "0.1.3",
+        version = "0.1.4",
         author = "X9Z0.M2",
         description = "Directional Indicators to Important Drops",
         present = present,
