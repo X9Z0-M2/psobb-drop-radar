@@ -16,7 +16,8 @@ _Note: for Phantasy Star Online: Blue Burst_
         * Extract .zip
 
     2. Place "Drop Radar" folder inside the "addons" folder where all the other psobb addons are.
-        * Note: all files; *init.lua*, *configuration.lua*, *options.lua* must be inside "Drop Radar" 
+        * Note: all files; *init.lua*, *configuration.lua* must be inside "Drop Radar"
+        * *options.lua* file should be created upon next launch of the game if not present
 
 
 
