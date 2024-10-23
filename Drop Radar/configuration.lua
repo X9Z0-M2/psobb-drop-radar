@@ -137,6 +137,28 @@ local function ConfigurationWindow(configuration)
         return custom
     end
 
+    local function PresentOverrideButton(buttonName, hudIdx)
+        if _configuration[hudIdx].AdditionalHudOverrides then
+            local overrideName = buttonName .. "Override"
+            if imgui.Checkbox("##" .. overrideName, _configuration[hudIdx][overrideName]) then
+                _configuration[hudIdx][overrideName] = not _configuration[hudIdx][overrideName]
+                _configuration[hudIdx].changed = true
+                if hudIdx == "hud1" then
+                    for j=2, _configuration.maxNumHUDs do
+                        local hudIdx = "hud" .. j
+                        _configuration[hudIdx][overrideName] = _configuration["hud1"][overrideName]
+                        _configuration[hudIdx].changed = true
+                    end
+                end
+                this.changed = true
+            end
+            if _configuration[hudIdx][overrideName] then
+                _configuration[hudIdx][buttonName] = _configuration["hud1"][buttonName]
+            end
+            imgui.SameLine(0, 4)
+        end
+    end
+
     if not coneIndicatorDataInitd then
         newViewingConeIndicatorData()
     end
@@ -208,35 +230,6 @@ local function ConfigurationWindow(configuration)
                 this.changed = true
             end
 
-            if imgui.Checkbox("Reverse Item Direction", _configuration.reverseItemDirection) then
-                _configuration.reverseItemDirection = not _configuration.reverseItemDirection
-                this.changed = true
-            end
-
-            if imgui.Checkbox("Clamp Item Into View", _configuration.clampItemView) then
-                _configuration.clampItemView = not _configuration.clampItemView
-                this.changed = true
-            end
-
-            if imgui.Checkbox("Invert View", _configuration.invertViewData) then
-                _configuration.invertViewData = not _configuration.invertViewData
-                this.changed = true
-            end
-
-            if imgui.Checkbox("Invert Tick Markers", _configuration.invertTickMarkers) then
-                _configuration.invertTickMarkers = not _configuration.invertTickMarkers
-                this.changed = true
-            end
-
-            imgui.PushItemWidth(100)
-            success, _configuration.numHUDs = imgui.InputInt("Num Huds (for more colors) <- (WARNING: fps performance!)", _configuration.numHUDs)
-            imgui.PopItemWidth()
-            if success then
-                this.changed = true
-                _configuration.maxNumHUDs = 20
-                _configuration.numHUDs = clampVal(_configuration.numHUDs, 1, _configuration.maxNumHUDs)
-            end
-
             if imgui.Checkbox("Tile All Huds Together", _configuration.tileAllHuds) then
                 _configuration.tileAllHuds = not _configuration.tileAllHuds
                 this.changed = true
@@ -250,30 +243,13 @@ local function ConfigurationWindow(configuration)
                 end
             end
 
-            imgui.PlotHistogram("Front", viewingConeIndicatorFData, 180, 0, "", 0, 100, 140, 20)
-            imgui.PlotHistogram("Back", viewingConeIndicatorBData, 180, 0, "", 0, 100, 140, 20)
-            imgui.PushItemWidth(140)
-            success, _configuration.viewingConeDegs = imgui.SliderInt("Viewing Cone (Degrees)", _configuration.viewingConeDegs, 0, 180)
-            imgui.PopItemWidth()
-            if success then
-                this.changed = true
-                newViewingConeIndicatorData()
-            end
-
-            imgui.PushItemWidth(140)
-            success, _configuration.viewHudPrecision = imgui.SliderFloat("View Precision (> may lag)", _configuration.viewHudPrecision, 0.1, 2)
-            imgui.PopItemWidth()
-            if success then
-                this.changed = true
-                _configuration.viewHudPrecision = clampVal(_configuration.viewHudPrecision, 0, 999999)
-            end
-
             imgui.PushItemWidth(100)
-            success, _configuration.ignoreItemMaxDist = imgui.InputInt("Ignore Item Distance (far)", _configuration.ignoreItemMaxDist)
+            success, _configuration.numHUDs = imgui.InputInt("Num Huds (for more colors) <- (WARNING: fps performance!)", _configuration.numHUDs)
             imgui.PopItemWidth()
             if success then
                 this.changed = true
-                _configuration.ignoreItemMaxDist = clampVal(_configuration.ignoreItemMaxDist, 0, 999999)
+                _configuration.maxNumHUDs = 20
+                _configuration.numHUDs = clampVal(_configuration.numHUDs, 1, _configuration.maxNumHUDs)
             end
 
             imgui.PushItemWidth(100)
@@ -300,25 +276,56 @@ local function ConfigurationWindow(configuration)
                 nodeName = "Hud Main"
             end
             if imgui.TreeNodeEx(nodeName) then
+
+                local additionalOverrideButtonText = "Enable Additional Hud Overrides"
+                if i > 1 then
+                    additionalOverrideButtonText = "Sync Additional Hud Overrides"
+                end
+                if imgui.Checkbox(additionalOverrideButtonText, _configuration[hudIdx].AdditionalHudOverrides) then
+                    _configuration[hudIdx].AdditionalHudOverrides = not _configuration[hudIdx].AdditionalHudOverrides
+                    _configuration[hudIdx].changed = true
+                    this.changed = true
+                end
+
+                if imgui.Checkbox("Always On Top", _configuration[hudIdx].AlwaysOnTop) then
+                    local alwaysOnTop = not _configuration[hudIdx].AlwaysOnTop
+                    if alwaysOnTop then
+                        for j=1, _configuration.maxNumHUDs do
+                            local hudIdx = "hud" .. j
+                            _configuration[hudIdx].AlwaysOnTop = false
+                        end
+                    end
+                    _configuration[hudIdx].AlwaysOnTop = alwaysOnTop
+                    _configuration[hudIdx].changed = true
+                    this.changed = true
+                end
+
+                PresentOverrideButton("EnableWindow", hudIdx)
                 if imgui.Checkbox("Enable", _configuration[hudIdx].EnableWindow) then
                     _configuration[hudIdx].EnableWindow = not _configuration[hudIdx].EnableWindow
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
 
+                PresentOverrideButton("HideWhenMenu", hudIdx)
                 if imgui.Checkbox("Hide when menus are open", _configuration[hudIdx].HideWhenMenu) then
                     _configuration[hudIdx].HideWhenMenu = not _configuration[hudIdx].HideWhenMenu
                     this.changed = true
                 end
+
+                PresentOverrideButton("HideWhenSymbolChat", hudIdx)
                 if imgui.Checkbox("Hide when symbol chat/word select is open", _configuration[hudIdx].HideWhenSymbolChat) then
                     _configuration[hudIdx].HideWhenSymbolChat = not _configuration[hudIdx].HideWhenSymbolChat
                     this.changed = true
                 end
+
+                PresentOverrideButton("HideWhenMenuUnavailable", hudIdx)
                 if imgui.Checkbox("Hide when the menu is unavailable", _configuration[hudIdx].HideWhenMenuUnavailable) then
                     _configuration[hudIdx].HideWhenMenuUnavailable = not _configuration[hudIdx].HideWhenMenuUnavailable
                     this.changed = true
                 end
 
+                PresentOverrideButton("NoTitleBar", hudIdx)
                 if imgui.Checkbox("No title bar", _configuration[hudIdx].NoTitleBar == "NoTitleBar") then
                     if _configuration[hudIdx].NoTitleBar == "NoTitleBar" then
                         _configuration[hudIdx].NoTitleBar = ""
@@ -328,6 +335,8 @@ local function ConfigurationWindow(configuration)
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
+
+                PresentOverrideButton("NoResize", hudIdx)
                 if imgui.Checkbox("No resize", _configuration[hudIdx].NoResize == "NoResize") then
                     if _configuration[hudIdx].NoResize == "NoResize" then
                         _configuration[hudIdx].NoResize = ""
@@ -337,6 +346,8 @@ local function ConfigurationWindow(configuration)
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
+
+                PresentOverrideButton("NoMove", hudIdx)
                 if imgui.Checkbox("No move", _configuration[hudIdx].NoMove == "NoMove") then
                     if _configuration[hudIdx].NoMove == "NoMove" then
                         _configuration[hudIdx].NoMove = ""
@@ -346,6 +357,8 @@ local function ConfigurationWindow(configuration)
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
+
+                PresentOverrideButton("AlwaysAutoResize", hudIdx)
                 if imgui.Checkbox("Always Auto Resize", _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize") then
                     if _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize" then
                         _configuration[hudIdx].AlwaysAutoResize = ""
@@ -356,12 +369,14 @@ local function ConfigurationWindow(configuration)
                     this.changed = true
                 end
 
+                PresentOverrideButton("TransparentWindow", hudIdx)
                 if imgui.Checkbox("Transparent window", _configuration[hudIdx].TransparentWindow) then
                     _configuration[hudIdx].TransparentWindow = not _configuration[hudIdx].TransparentWindow
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
 
+                PresentOverrideButton("customHudColorEnable", hudIdx)
                 if imgui.Checkbox("Custom Hud Color", _configuration[hudIdx].customHudColorEnable) then
                     _configuration[hudIdx].customHudColorEnable = not _configuration[hudIdx].customHudColorEnable
                     this.changed = true
@@ -371,6 +386,94 @@ local function ConfigurationWindow(configuration)
                     _configuration[hudIdx].customHudColorMarker     = PresentColorEditor("Marker Color",     0xFFFF9900, _configuration[hudIdx].customHudColorMarker)
                     _configuration[hudIdx].customHudColorBackground = PresentColorEditor("Background Color", 0x4CCCCCCC, _configuration[hudIdx].customHudColorBackground)
                     _configuration[hudIdx].customHudColorWindow     = PresentColorEditor("Window Color",     0x46000000, _configuration[hudIdx].customHudColorWindow)
+                end
+                
+                if imgui.TreeNodeEx("Display") then
+
+                    if _configuration[hudIdx].AdditionalHudOverrides then
+                        local overrideName = "reverseItemDirectionOverride"
+                        if imgui.Checkbox("##" .. overrideName, _configuration[hudIdx][overrideName]) then
+                            _configuration[hudIdx][overrideName] = not _configuration[hudIdx][overrideName]
+                            _configuration[hudIdx].changed = true
+                            if hudIdx == "hud1" then
+                                if _configuration[hudIdx].reverseItemDirection then
+                                    _configuration.itemDirectionReversedCount = 1
+                                else
+                                    _configuration.itemDirectionReversedCount = 0
+                                end
+                                for j=2, _configuration.maxNumHUDs do
+                                    local hudIdx = "hud" .. j
+                                    _configuration[hudIdx][overrideName] = _configuration["hud1"][overrideName]
+                                    _configuration[hudIdx].changed = true
+                                    if _configuration["hud1"].reverseItemDirection and _configuration[hudIdx].enable then
+                                        _configuration.itemDirectionReversedCount = _configuration.itemDirectionReversedCount + 1
+                                    end
+                                end
+                            end
+                            this.changed = true
+                        end
+                        if _configuration[hudIdx][overrideName] then
+                            _configuration[hudIdx].reverseItemDirection = _configuration["hud1"].reverseItemDirection
+                        end
+                        imgui.SameLine(0, 4)
+                    end
+                    if imgui.Checkbox("Reverse Item Direction", _configuration[hudIdx].reverseItemDirection) then
+                        _configuration[hudIdx].reverseItemDirection = not _configuration[hudIdx].reverseItemDirection
+                        if _configuration[hudIdx].reverseItemDirection then
+                            _configuration.itemDirectionReversedCount = _configuration.itemDirectionReversedCount + 1
+                        else
+                            _configuration.itemDirectionReversedCount = _configuration.itemDirectionReversedCount - 1
+                        end
+                        this.changed = true
+                    end
+        
+                    PresentOverrideButton("clampItemView", hudIdx)
+                    if imgui.Checkbox("Clamp Item Into View", _configuration[hudIdx].clampItemView) then
+                        _configuration[hudIdx].clampItemView = not _configuration[hudIdx].clampItemView
+                        this.changed = true
+                    end
+        
+                    PresentOverrideButton("invertViewData", hudIdx)
+                    if imgui.Checkbox("Invert View", _configuration[hudIdx].invertViewData) then
+                        _configuration[hudIdx].invertViewData = not _configuration[hudIdx].invertViewData
+                        this.changed = true
+                    end
+        
+                    PresentOverrideButton("invertTickMarkers", hudIdx)
+                    if imgui.Checkbox("Invert Tick Markers", _configuration[hudIdx].invertTickMarkers) then
+                        _configuration[hudIdx].invertTickMarkers = not _configuration[hudIdx].invertTickMarkers
+                        this.changed = true
+                    end
+
+                    imgui.PlotHistogram("Front", viewingConeIndicatorFData, 180, 0, "", 0, 100, 140, 20)
+                    imgui.PlotHistogram("Back", viewingConeIndicatorBData, 180, 0, "", 0, 100, 140, 20)
+
+                    PresentOverrideButton("viewingConeDegs", hudIdx)
+                    imgui.PushItemWidth(140)
+                    success, _configuration[hudIdx].viewingConeDegs = imgui.SliderInt("Viewing Cone (Degrees)", _configuration[hudIdx].viewingConeDegs, 0, 180)
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                        newViewingConeIndicatorData()
+                    end
+        
+                    PresentOverrideButton("viewHudPrecision", hudIdx)
+                    imgui.PushItemWidth(140)
+                    success, _configuration[hudIdx].viewHudPrecision = imgui.SliderFloat("View Precision (> may lag)", _configuration[hudIdx].viewHudPrecision, 0.1, 2)
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                        _configuration[hudIdx].viewHudPrecision = clampVal(_configuration[hudIdx].viewHudPrecision, 0, 999999)
+                    end
+        
+                    PresentOverrideButton("ignoreItemMaxDist", hudIdx)
+                    imgui.PushItemWidth(100)
+                    success, _configuration[hudIdx].ignoreItemMaxDist = imgui.InputInt("Ignore Item Distance (far)", _configuration[hudIdx].ignoreItemMaxDist)
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                        _configuration[hudIdx].ignoreItemMaxDist = clampVal(_configuration[hudIdx].ignoreItemMaxDist, 0, 999999)
+                    end
                 end
 
                 if imgui.TreeNodeEx("Custom Sizing") then
@@ -417,30 +520,32 @@ local function ConfigurationWindow(configuration)
                         _configuration[hudIdx].sizing.UselessTechsW, _configuration[hudIdx].sizing.UselessTechsH = 
                         dropSizing("Useless Techs", _configuration[hudIdx].sizing.UselessTechsW, _configuration[hudIdx].sizing.UselessTechsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
                         
-                        _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMinH = 
-                        dropSizing("Meseta Height Min", _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMinH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        if not _configuration.ignoreMeseta then
+                            _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMinH = 
+                            dropSizing("Meseta Height Min", _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMinH, SWidth, SWidth, MarkerSizeRange, SizingRange)
 
-                        _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMaxH = 
-                        dropSizing("Meseta Height Max", _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMaxH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                            _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMaxH = 
+                            dropSizing("Meseta Height Max", _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMaxH, SWidth, SWidth, MarkerSizeRange, SizingRange)
 
-                        imgui.PushItemWidth(SWidthP)
-                        success, _configuration[hudIdx].sizing.MesetaMin = imgui.DragInt("Meseta Min (will ignore below amount)", _configuration[hudIdx].sizing.MesetaMin, 10, MesetaRange[1], MesetaRange[2])
-                        imgui.PopItemWidth()
-                        if success then
-                            this.changed = true
-                        end
-                        if _configuration[hudIdx].sizing.MesetaMin > _configuration[hudIdx].sizing.MesetaMax then
-                            _configuration[hudIdx].sizing.MesetaMin = _configuration[hudIdx].sizing.MesetaMax
-                        end
+                            imgui.PushItemWidth(SWidthP)
+                            success, _configuration[hudIdx].sizing.MesetaMin = imgui.DragInt("Meseta Min (will ignore below amount)", _configuration[hudIdx].sizing.MesetaMin, 10, MesetaRange[1], MesetaRange[2])
+                            imgui.PopItemWidth()
+                            if success then
+                                this.changed = true
+                            end
+                            if _configuration[hudIdx].sizing.MesetaMin > _configuration[hudIdx].sizing.MesetaMax then
+                                _configuration[hudIdx].sizing.MesetaMin = _configuration[hudIdx].sizing.MesetaMax
+                            end
 
-                        imgui.PushItemWidth(SWidthP)
-                        success, _configuration[hudIdx].sizing.MesetaMax = imgui.DragInt("Meseta Max (doesn't filter out)", _configuration[hudIdx].sizing.MesetaMax, 10, MesetaRange[1], MesetaRange[2])
-                        imgui.PopItemWidth()
-                        if success then
-                            this.changed = true
-                        end
-                        if _configuration[hudIdx].sizing.MesetaMax < _configuration[hudIdx].sizing.MesetaMin then
-                            _configuration[hudIdx].sizing.MesetaMax = _configuration[hudIdx].sizing.MesetaMin
+                            imgui.PushItemWidth(SWidthP)
+                            success, _configuration[hudIdx].sizing.MesetaMax = imgui.DragInt("Meseta Max (doesn't filter out)", _configuration[hudIdx].sizing.MesetaMax, 10, MesetaRange[1], MesetaRange[2])
+                            imgui.PopItemWidth()
+                            if success then
+                                this.changed = true
+                            end
+                            if _configuration[hudIdx].sizing.MesetaMax < _configuration[hudIdx].sizing.MesetaMin then
+                                _configuration[hudIdx].sizing.MesetaMax = _configuration[hudIdx].sizing.MesetaMin
+                            end
                         end
 
                         imgui.TreePop()
@@ -587,6 +692,9 @@ local function ConfigurationWindow(configuration)
                         _configuration[hudIdx].sizing.HPMatW, _configuration[hudIdx].sizing.HPMatH = 
                         dropSizing("HP Material", _configuration[hudIdx].sizing.HPMatW, _configuration[hudIdx].sizing.HPMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
 
+                        _configuration[hudIdx].sizing.TPMatW, _configuration[hudIdx].sizing.TPMatH = 
+                        dropSizing("TP Material", _configuration[hudIdx].sizing.TPMatW, _configuration[hudIdx].sizing.TPMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
                         _configuration[hudIdx].sizing.LuckMatW, _configuration[hudIdx].sizing.LuckMatH = 
                         dropSizing("Luck Material", _configuration[hudIdx].sizing.LuckMatW, _configuration[hudIdx].sizing.LuckMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
 
@@ -605,11 +713,11 @@ local function ConfigurationWindow(configuration)
                         imgui.TreePop()
                     end
 
-                    if imgui.Checkbox("Enable Clairs Deal 5 Items", _configuration.ClairesDealEnable) then
-                        _configuration.ClairesDealEnable = not _configuration.ClairesDealEnable
+                    if imgui.Checkbox("Enable Clairs Deal 5 Items", _configuration[hudIdx].sizing.ClairesDealEnable) then
+                        _configuration[hudIdx].sizing.ClairesDealEnable = not _configuration[hudIdx].sizing.ClairesDealEnable
                         this.changed = true
                     end
-                    if _configuration.ClairesDealEnable then
+                    if _configuration[hudIdx].sizing.ClairesDealEnable then
                         _configuration[hudIdx].sizing.ClairesDealW, _configuration[hudIdx].sizing.ClairesDealH = 
                         dropSizing("Claire's Deal 5 Items", _configuration[hudIdx].sizing.ClairesDealW, _configuration[hudIdx].sizing.ClairesDealH, SWidth, SWidth, MarkerSizeRange, SizingRange)
                     end
@@ -623,6 +731,7 @@ local function ConfigurationWindow(configuration)
 
                 if not _configuration.tileAllHuds or hudIdx == "hud1" then
                     imgui.Text("Position and Size")
+                    PresentOverrideButton("Anchor", hudIdx)
                     imgui.PushItemWidth(200)
                     success, _configuration[hudIdx].Anchor = imgui.Combo("Anchor", _configuration[hudIdx].Anchor, anchorList, table.getn(anchorList))
                     imgui.PopItemWidth()
@@ -632,6 +741,7 @@ local function ConfigurationWindow(configuration)
                     end
 
                     imgui.PushItemWidth(100)
+                    PresentOverrideButton("X", hudIdx)
                     success, _configuration[hudIdx].X = imgui.InputInt("X", _configuration[hudIdx].X)
                     imgui.PopItemWidth()
                     if success then
@@ -641,6 +751,7 @@ local function ConfigurationWindow(configuration)
 
                     imgui.SameLine(0, 38)
                     imgui.PushItemWidth(100)
+                    PresentOverrideButton("Y", hudIdx)
                     success, _configuration[hudIdx].Y = imgui.InputInt("Y", _configuration[hudIdx].Y)
                     imgui.PopItemWidth()
                     if success then
@@ -650,6 +761,7 @@ local function ConfigurationWindow(configuration)
                 end
 
                 imgui.PushItemWidth(100)
+                PresentOverrideButton("W", hudIdx)
                 success, _configuration[hudIdx].W = imgui.InputInt("Width", _configuration[hudIdx].W)
                 imgui.PopItemWidth()
                 if success then
@@ -659,6 +771,7 @@ local function ConfigurationWindow(configuration)
 
                 imgui.SameLine(0, 10)
                 imgui.PushItemWidth(100)
+                PresentOverrideButton("H", hudIdx)
                 success, _configuration[hudIdx].H = imgui.InputInt("Height", _configuration[hudIdx].H)
                 imgui.PopItemWidth()
                 if success then

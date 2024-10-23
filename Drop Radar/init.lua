@@ -20,18 +20,12 @@ local function LoadOptions()
     options.configurationEnableWindow = lib_helpers.NotNilOrDefault(options.configurationEnableWindow, true)
     options.enable                    = lib_helpers.NotNilOrDefault(options.enable, true)
     options.ignoreMeseta              = lib_helpers.NotNilOrDefault(options.ignoreMeseta, false)
-    options.reverseItemDirection      = lib_helpers.NotNilOrDefault(options.reverseItemDirection, false)
-    options.clampItemView             = lib_helpers.NotNilOrDefault(options.clampItemView, false)
-    options.invertViewData            = lib_helpers.NotNilOrDefault(options.invertViewData, false)
-    options.invertTickMarkers         = lib_helpers.NotNilOrDefault(options.invertTickMarkers, false)
     options.maxNumHUDs                = lib_helpers.NotNilOrDefault(options.maxNumHUDs, 20)
     options.numHUDs                   = lib_helpers.NotNilOrDefault(options.numHUDs, 1)
     options.tileAllHuds               = lib_helpers.NotNilOrDefault(options.tileAllHuds, true)
-    options.viewingConeDegs           = lib_helpers.NotNilOrDefault(options.viewingConeDegs, 90)
-    options.viewHudPrecision          = lib_helpers.NotNilOrDefault(options.viewHudPrecision, 1.0)
-    options.ignoreItemMaxDist         = lib_helpers.NotNilOrDefault(options.ignoreItemMaxDist, 0)
     options.updateThrottle            = lib_helpers.NotNilOrDefault(options.updateThrottle, 0)
     options.server                    = lib_helpers.NotNilOrDefault(options.server, 1)
+    options.itemDirectionReversedCount= 0
 
     for i=1, options.maxNumHUDs do
         local hudIdx = "hud" .. i
@@ -39,6 +33,7 @@ local function LoadOptions()
             options[hudIdx] = {}
         end
         options[hudIdx].EnableWindow                 = lib_helpers.NotNilOrDefault(options[hudIdx].EnableWindow, true)
+        options[hudIdx].AlwaysOnTop                  = lib_helpers.NotNilOrDefault(options[hudIdx].AlwaysOnTop, false)
         options[hudIdx].HideWhenMenu                 = lib_helpers.NotNilOrDefault(options[hudIdx].HideWhenMenu, false)
         options[hudIdx].HideWhenSymbolChat           = lib_helpers.NotNilOrDefault(options[hudIdx].HideWhenSymbolChat, false)
         options[hudIdx].HideWhenMenuUnavailable      = lib_helpers.NotNilOrDefault(options[hudIdx].HideWhenMenuUnavailable, false)
@@ -57,6 +52,22 @@ local function LoadOptions()
         options[hudIdx].customHudColorMarker         = lib_helpers.NotNilOrDefault(options[hudIdx].customHudColorMarker, 0xFFFF9900)
         options[hudIdx].customHudColorBackground     = lib_helpers.NotNilOrDefault(options[hudIdx].customHudColorBackground, 0x4CCCCCCC)
         options[hudIdx].customHudColorWindow         = lib_helpers.NotNilOrDefault(options[hudIdx].customHudColorWindow, 0xB2000000)
+
+        options[hudIdx].reverseItemDirection         = lib_helpers.NotNilOrDefault(options[hudIdx].reverseItemDirection, false)
+        options[hudIdx].clampItemView                = lib_helpers.NotNilOrDefault(options[hudIdx].clampItemView, false)
+        options[hudIdx].invertViewData               = lib_helpers.NotNilOrDefault(options[hudIdx].invertViewData, false)
+        options[hudIdx].invertTickMarkers            = lib_helpers.NotNilOrDefault(options[hudIdx].invertTickMarkers, false)
+        options[hudIdx].viewingConeDegs              = lib_helpers.NotNilOrDefault(options[hudIdx].viewingConeDegs, 90)
+        options[hudIdx].viewHudPrecision             = lib_helpers.NotNilOrDefault(options[hudIdx].viewHudPrecision, 1.0)
+        options[hudIdx].ignoreItemMaxDist            = lib_helpers.NotNilOrDefault(options[hudIdx].ignoreItemMaxDist, 0)
+
+        if hudIdx == "hud1" then
+            options[hudIdx].AlwaysOnTop              = lib_helpers.NotNilOrDefault(options[hudIdx].AlwaysOnTop, true)
+        end
+
+        if options[hudIdx].reverseItemDirection then
+            options.itemDirectionReversedCount = options.itemDirectionReversedCount + 1
+        end
 
         if options[hudIdx].sizing == nil or type(options[hudIdx].sizing) ~= "table" then
             options[hudIdx].sizing = {}
@@ -114,6 +125,7 @@ local function LoadOptions()
         options[hudIdx].sizing.DigrinderH         = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.DigrinderH,  70)
         options[hudIdx].sizing.TrigrinderH        = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.TrigrinderH,  90)
         options[hudIdx].sizing.HPMatH             = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.HPMatH,  95)
+        options[hudIdx].sizing.TPMatH             = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.TPMatH,  95)
         options[hudIdx].sizing.PowerMatH          = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.PowerMatH,  92)
         options[hudIdx].sizing.LuckMatH           = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.LuckMatH,  100)
         options[hudIdx].sizing.MindMatH           = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.MindMatH,  92)
@@ -168,6 +180,7 @@ local function LoadOptions()
         options[hudIdx].sizing.DigrinderW         = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.DigrinderW,  0.001)
         options[hudIdx].sizing.TrigrinderW        = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.TrigrinderW,  0.001)
         options[hudIdx].sizing.HPMatW             = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.HPMatW,  0.001)
+        options[hudIdx].sizing.TPMatW             = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.TPMatW,  0.001)
         options[hudIdx].sizing.PowerMatW          = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.PowerMatW,  0.001)
         options[hudIdx].sizing.LuckMatW           = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.LuckMatW,  0.001)
         options[hudIdx].sizing.MindMatW           = lib_helpers.NotNilOrDefault(options[hudIdx].sizing.MindMatW,  0.001)
@@ -283,9 +296,10 @@ local function updateToolLookupTable()
                 [0x00] = {options[hudIdx].sizing.PowerMatW, options[hudIdx].sizing.PowerMatH, "PowerMat"},
                 [0x01] = {options[hudIdx].sizing.MindMatW, options[hudIdx].sizing.MindMatH, "MindMat"},
                 [0x02] = {options[hudIdx].sizing.EvadeMatW, options[hudIdx].sizing.EvadeMatH, "EvadeMat"},
-                [0x00] = {options[hudIdx].sizing.HPMatW, options[hudIdx].sizing.HPMatH, "HPMat"},
-                [0x01] = {options[hudIdx].sizing.DefenseMatW, options[hudIdx].sizing.DefenseMatH, "DefenseMat"},
-                [0x02] = {options[hudIdx].sizing.LuckMatW, options[hudIdx].sizing.LuckMatH, "LuckMat"},
+                [0x03] = {options[hudIdx].sizing.HPMatW, options[hudIdx].sizing.HPMatH, "HPMat"},
+                [0x04] = {options[hudIdx].sizing.TPMatH, options[hudIdx].sizing.TPMatH, "TPMat"},
+                [0x05] = {options[hudIdx].sizing.DefenseMatW, options[hudIdx].sizing.DefenseMatH, "DefenseMat"},
+                [0x06] = {options[hudIdx].sizing.LuckMatW, options[hudIdx].sizing.LuckMatH, "LuckMat"},
             },
         }
     end
@@ -370,32 +384,28 @@ local function AppendItemFacingFromCurPlayer(item,playerDir)
         x = item.posx - playerSelfCoords.x,
         z = item.posz - playerSelfCoords.z,
     }
-    -- ignore if item is too far away
-    if options.ignoreItemMaxDist > 0 then
-        if math.sqrt(itemDir.x^2 + itemDir.z^2) > options.ignoreItemMaxDist then
-            return
-        end
-    end
 
-    local itemNormDir = NormalizeVec2(itemDir)
-
+    local itemNormDir = NormalizeVec2(itemDir)    
     local itemFacing = {
         x = (itemNormDir.x - playerDir.x) / 2,
         z = (itemNormDir.z - playerDir.z) / 2,
     }
     --local itemLocalFacing = math.asin( itemNormDir.x * playerDir.x + itemNormDir.z * playerDir.z ) * 180/math.pi
     local itemLocalFacing
-    if options.reverseItemDirection then
+    
+    if options.itemDirectionReversedCount > 0 then
         itemLocalFacing = math.atan2(  playerDir.z, playerDir.x ) - math.atan2(  itemNormDir.z, itemNormDir.x )
-    else
-        itemLocalFacing = math.atan2(  itemNormDir.z, itemNormDir.x ) - math.atan2(  playerDir.z, playerDir.x )
+        if itemLocalFacing > math.pi then itemLocalFacing = itemLocalFacing - math.pi*2 end
+        if itemLocalFacing < -math.pi then itemLocalFacing = itemLocalFacing + math.pi*2 end
+        item.curPlayerFacingItemDegreesRev = itemLocalFacing * 180/math.pi
     end
+
+    itemLocalFacing = math.atan2(  itemNormDir.z, itemNormDir.x ) - math.atan2(  playerDir.z, playerDir.x )
     if itemLocalFacing > math.pi then itemLocalFacing = itemLocalFacing - math.pi*2 end
     if itemLocalFacing < -math.pi then itemLocalFacing = itemLocalFacing + math.pi*2 end
 
-    local itemFacingDegs = itemLocalFacing * 180/math.pi
-
-    item.curPlayerFacingItemDegrees = itemFacingDegs
+    item.curPlayerFacingItemDegrees = itemLocalFacing * 180/math.pi
+    item.curPlayerDistance = math.sqrt(itemDir.x^2 + itemDir.z^2)
 end
 
 local function ItemAppendGraphData(size,val,item,hudIdx)
@@ -410,25 +420,37 @@ local function ItemAppendGraphData(size,val,item,hudIdx)
     -- end
     -- --eof
 
-    if val <1 or size == 0 or options.viewingConeDegs == 0 then return end
+    if val <1 or size == 0 or options[hudIdx].viewingConeDegs == 0 then return end
 
-    if options.invertViewData then
+    -- ignore if item is too far away
+    if options[hudIdx].ignoreItemMaxDist > 0 then
+        if item.curPlayerDistance > options[hudIdx].ignoreItemMaxDist then
+            return
+        end
+    end
+
+    if options[hudIdx].invertViewData then
         val = 100-val
     end
 
-    local itemFacingDegs = item.curPlayerFacingItemDegrees
-
-    if options.clampItemView then
-        itemFacingDegs = clampVal( itemFacingDegs , -options.viewingConeDegs, options.viewingConeDegs)
+    local itemFacingDegs = 0
+    if options[hudIdx].reverseItemDirection then
+        itemFacingDegs = item.curPlayerFacingItemDegreesRev
     else
-        if itemFacingDegs > options.viewingConeDegs or itemFacingDegs < -options.viewingConeDegs then
+        itemFacingDegs = item.curPlayerFacingItemDegrees
+    end
+    --print(hudIdx,options[hudIdx].reverseItemDirection,options.itemDirectionReversedCount,itemFacingDegs,tostring(options[hudIdx].viewingConeDegs))
+    if options[hudIdx].clampItemView then
+        itemFacingDegs = clampVal( itemFacingDegs , -options[hudIdx].viewingConeDegs, options[hudIdx].viewingConeDegs)
+    else
+        if itemFacingDegs > options[hudIdx].viewingConeDegs or itemFacingDegs < -options[hudIdx].viewingConeDegs then
             return
         end
     end
 
     local itemHistogramPos = clampVal(
         math.floor(
-            Lerp(Norm(itemFacingDegs,-options.viewingConeDegs,options.viewingConeDegs), 1, item_graph_size[hudIdx])
+            Lerp(Norm(itemFacingDegs, -options[hudIdx].viewingConeDegs, options[hudIdx].viewingConeDegs), 1, item_graph_size[hudIdx])
         ),
         1, item_graph_size[hudIdx])
 
@@ -638,7 +660,7 @@ local function ProcessItem(item, floor, save, fromMagWindow, hudIdx)
         elseif item.data[2] == 2 then
             ProcessBarrier(item, floor, hudIdx)
         elseif item.data[2] == 3 then
-            ProcessUnit(item, floor)
+            ProcessUnit(item, floor, hudIdx)
         end
     elseif item.data[1] == 2 then
         ProcessMag(item, fromMagWindow, hudIdx)
@@ -659,9 +681,9 @@ local itemCount = 0
 local function PresentHud(hudIdx)
     
     item_graph_data[hudIdx] = {}
-    item_graph_size[hudIdx] = clampVal( math.floor( options[hudIdx].W / 2 * options.viewHudPrecision ), 1, 2000 ) -- histogram likes 2 pixels per bar, so if 1000 wide, then 500 table entries will visibly not show any gaps.
+    item_graph_size[hudIdx] = clampVal( math.floor( options[hudIdx].W / 2 * options[hudIdx].viewHudPrecision ), 1, 2000 ) -- histogram likes 2 pixels per bar, so if 1000 wide, then 500 table entries will visibly not show any gaps.
 
-    if options.invertViewData then
+    if options[hudIdx].invertViewData then
         for i=1, item_graph_size[hudIdx] do
             table.insert(item_graph_data[hudIdx], 100)
         end
@@ -671,7 +693,7 @@ local function PresentHud(hudIdx)
         end
     end
 
-    if options.invertTickMarkers then
+    if options[hudIdx].invertTickMarkers then
         item_graph_data[hudIdx][math.floor(Lerp(0.3,1,item_graph_size[hudIdx]))] = 95
         item_graph_data[hudIdx][math.floor(Lerp(0.5,1,item_graph_size[hudIdx]))] = 90
         item_graph_data[hudIdx][math.floor(Lerp(0.7,1,item_graph_size[hudIdx]))] = 95
@@ -786,7 +808,7 @@ local function present()
                     options[hudIdx].AlwaysAutoResize,
                     options[hudIdx].changed)
             end
-            if options.tileAllHuds and hudIdx == "hud1" then
+            if (options.tileAllHuds and hudIdx == "hud1") or options[hudIdx].AlwaysOnTop then
                 imgui.SetWindowFocus()
             end
             imgui.End()
@@ -819,7 +841,7 @@ local function init()
     return
     {
         name = "Drop Radar",
-        version = "0.2.0",
+        version = "0.2.1",
         author = "X9Z0.M2",
         description = "Directional Indicators to Important Drops",
         present = present,
