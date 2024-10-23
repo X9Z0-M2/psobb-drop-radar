@@ -27,7 +27,7 @@ local function LoadOptions()
     options.server                    = lib_helpers.NotNilOrDefault(options.server, 1)
     options.itemDirectionReversedCount= 0
 
-    for i=1, options.maxNumHUDs do
+    for i=1, options.numHUDs do
         local hudIdx = "hud" .. i
         if options[hudIdx] == nil or type(options[hudIdx]) ~= "table" then
             options[hudIdx] = {}
@@ -407,7 +407,20 @@ local function AppendItemFacingFromCurPlayer(item,playerDir)
     item.curPlayerFacingItemDegrees = itemLocalFacing * 180/math.pi
     item.curPlayerDistance = math.sqrt(itemDir.x^2 + itemDir.z^2)
 end
-
+local function invertedViewGraphValCheck(curVal, newVal)
+    if curVal > newVal then
+        return true
+    else
+        return false
+    end
+end
+local function nonInvertedViewGraphValCheck(curVal, newVal)
+    if curVal < newVal then
+        return true
+    else
+        return false
+    end
+end
 local function ItemAppendGraphData(size,val,item,hudIdx)
     if not item then return end
     -- --debug
@@ -429,8 +442,12 @@ local function ItemAppendGraphData(size,val,item,hudIdx)
         end
     end
 
+    local GraphValCheck
     if options[hudIdx].invertViewData then
         val = 100-val
+        GraphValCheck = invertedViewGraphValCheck
+    else
+        GraphValCheck = nonInvertedViewGraphValCheck
     end
 
     local itemFacingDegs = 0
@@ -452,16 +469,23 @@ local function ItemAppendGraphData(size,val,item,hudIdx)
         math.floor(
             Lerp(Norm(itemFacingDegs, -options[hudIdx].viewingConeDegs, options[hudIdx].viewingConeDegs), 1, item_graph_size[hudIdx])
         ),
-        1, item_graph_size[hudIdx])
+        1, item_graph_size[hudIdx]
+    )
 
+    local idx
     local dataCutoff = Lerp(Norm(size,0.001,5), 1, item_graph_size[hudIdx]*0.05)
-    item_graph_data[hudIdx][ itemHistogramPos ] = val
+    if GraphValCheck(item_graph_data[hudIdx][itemHistogramPos], val) then
+        item_graph_data[hudIdx][itemHistogramPos] = val
+    end
     for i=2, item_graph_size[hudIdx] do
         if i < dataCutoff then
             if i % 2 > 0 then
-                item_graph_data[hudIdx][ itemHistogramPos - math.floor((i)/2) ] = val
+                idx = clampVal(itemHistogramPos - math.floor((i)/2), 1, item_graph_size[hudIdx])
             else
-                item_graph_data[hudIdx][ itemHistogramPos + math.floor((i)/2) ] = val
+                idx = clampVal(itemHistogramPos - math.floor((i)/2), 1, item_graph_size[hudIdx])
+            end
+            if GraphValCheck(item_graph_data[hudIdx][idx], val) then
+                item_graph_data[hudIdx][idx] = val
             end
         else
             break
@@ -492,7 +516,6 @@ local function ProcessWeapon(item, floor, hudIdx)
         ItemAppendGraphData( options[hudIdx].sizing.SRankWeaponsW, options[hudIdx].sizing.SRankWeaponsH, item, hudIdx )
     end
 end
-
 local function ProcessFrame(item, floor, hudIdx)
 
     local item_cfg = lib_items_list.t[item.hex]
@@ -677,11 +700,13 @@ local current_time = 0
 local last_floor_time = 0
 local cache_floor = nil
 local itemCount = 0
+local lastNumHUDs = options.numHUDs
 
 local function PresentHud(hudIdx)
     
     item_graph_data[hudIdx] = {}
     item_graph_size[hudIdx] = clampVal( math.floor( options[hudIdx].W / 2 * options[hudIdx].viewHudPrecision ), 1, 2000 ) -- histogram likes 2 pixels per bar, so if 1000 wide, then 500 table entries will visibly not show any gaps.
+    item_graph_size[hudIdx] = item_graph_size[hudIdx] - item_graph_size[hudIdx] % 2
 
     if options[hudIdx].invertViewData then
         for i=1, item_graph_size[hudIdx] do
@@ -727,6 +752,11 @@ local function present()
 
     if ConfigurationWindow.changed then
         ConfigurationWindow.changed = false
+        if options.numHUDs > lastNumHUDs then
+            LoadOptions()
+            print(options.numHUDs, lastNumHUDs)
+            lastNumHUDs = options.numHUDs
+        end
         updateToolLookupTable()
         SaveOptions(options)
         -- Update the delay too
@@ -841,7 +871,7 @@ local function init()
     return
     {
         name = "Drop Radar",
-        version = "0.2.1",
+        version = "0.2.2",
         author = "X9Z0.M2",
         description = "Directional Indicators to Important Drops",
         present = present,

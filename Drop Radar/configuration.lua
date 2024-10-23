@@ -144,7 +144,7 @@ local function ConfigurationWindow(configuration)
                 _configuration[hudIdx][overrideName] = not _configuration[hudIdx][overrideName]
                 _configuration[hudIdx].changed = true
                 if hudIdx == "hud1" then
-                    for j=2, _configuration.maxNumHUDs do
+                    for j=2, _configuration.numHUDs do
                         local hudIdx = "hud" .. j
                         _configuration[hudIdx][overrideName] = _configuration["hud1"][overrideName]
                         _configuration[hudIdx].changed = true
@@ -152,10 +152,17 @@ local function ConfigurationWindow(configuration)
                 end
                 this.changed = true
             end
+            imgui.SameLine(0, 4)
+        end
+    end
+
+    local function CopyOverridedSettings(buttonName, hudIdx)
+        if _configuration[hudIdx].AdditionalHudOverrides then
+            local overrideName = buttonName .. "Override"
             if _configuration[hudIdx][overrideName] then
                 _configuration[hudIdx][buttonName] = _configuration["hud1"][buttonName]
+                _configuration[hudIdx].changed = true
             end
-            imgui.SameLine(0, 4)
         end
     end
 
@@ -219,6 +226,9 @@ local function ConfigurationWindow(configuration)
             return Setting, Setting2
         end
 
+        local numHUDsChanged = false
+        local lastNumHUDs
+
         if imgui.TreeNodeEx("General", "DefaultOpen") then
             if imgui.Checkbox("Enable", _configuration.enable) then
                 _configuration.enable = not _configuration.enable
@@ -235,7 +245,7 @@ local function ConfigurationWindow(configuration)
                 this.changed = true
             end
             if _configuration.tileAllHuds then
-                for j=2, _configuration.maxNumHUDs do
+                for j=2, _configuration.numHUDs do
                     local hudIdx = "hud" .. j
                     _configuration[hudIdx].Anchor = _configuration["hud1"].Anchor
                     _configuration[hudIdx].X      = _configuration["hud1"].X
@@ -244,10 +254,12 @@ local function ConfigurationWindow(configuration)
             end
 
             imgui.PushItemWidth(100)
+            lastNumHUDs =_configuration.numHUDs
             success, _configuration.numHUDs = imgui.InputInt("Num Huds (for more colors) <- (WARNING: fps performance!)", _configuration.numHUDs)
             imgui.PopItemWidth()
             if success then
                 this.changed = true
+                numHUDsChanged = true
                 _configuration.maxNumHUDs = 20
                 _configuration.numHUDs = clampVal(_configuration.numHUDs, 1, _configuration.maxNumHUDs)
             end
@@ -269,12 +281,19 @@ local function ConfigurationWindow(configuration)
             imgui.TreePop()
         end
 
-        for i=1, _configuration.numHUDs do
+        local numHUDsToIterate
+        if numHUDsChanged and _configuration.numHUDs > lastNumHUDs then
+            numHUDsToIterate = lastNumHUDs
+        else
+            numHUDsToIterate = _configuration.numHUDs
+        end
+        for i=1, numHUDsToIterate do
             local hudIdx = "hud" .. i
             local nodeName = "Hud " .. i
             if i == 1 then
                 nodeName = "Hud Main"
             end
+
             if imgui.TreeNodeEx(nodeName) then
 
                 local additionalOverrideButtonText = "Enable Additional Hud Overrides"
@@ -414,6 +433,7 @@ local function ConfigurationWindow(configuration)
                         end
                         if _configuration[hudIdx][overrideName] then
                             _configuration[hudIdx].reverseItemDirection = _configuration["hud1"].reverseItemDirection
+                            _configuration[hudIdx].changed = true
                         end
                         imgui.SameLine(0, 4)
                     end
@@ -779,6 +799,31 @@ local function ConfigurationWindow(configuration)
                     this.changed = true
                 end
                 imgui.TreePop()
+            end
+
+            if this.changed and i > 1 then
+                CopyOverridedSettings("EnableWindow", hudIdx)
+                CopyOverridedSettings("HideWhenMenu", hudIdx)
+                CopyOverridedSettings("HideWhenSymbolChat", hudIdx)
+                CopyOverridedSettings("HideWhenMenuUnavailable", hudIdx)
+                CopyOverridedSettings("NoTitleBar", hudIdx)
+                CopyOverridedSettings("NoResize", hudIdx)
+                CopyOverridedSettings("NoMove", hudIdx)
+                CopyOverridedSettings("AlwaysAutoResize", hudIdx)
+                CopyOverridedSettings("TransparentWindow", hudIdx)
+                CopyOverridedSettings("customHudColorEnable", hudIdx)
+                CopyOverridedSettings("reverseItemDirection", hudIdx)
+                CopyOverridedSettings("clampItemView", hudIdx)
+                CopyOverridedSettings("invertViewData", hudIdx)
+                CopyOverridedSettings("invertTickMarkers", hudIdx)
+                CopyOverridedSettings("viewingConeDegs", hudIdx)
+                CopyOverridedSettings("viewHudPrecision", hudIdx)
+                CopyOverridedSettings("ignoreItemMaxDist", hudIdx)
+                CopyOverridedSettings("Anchor", hudIdx)
+                CopyOverridedSettings("X", hudIdx)
+                CopyOverridedSettings("Y", hudIdx)
+                CopyOverridedSettings("H", hudIdx)
+                CopyOverridedSettings("W", hudIdx)
             end
         end
 
