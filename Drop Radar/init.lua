@@ -63,6 +63,8 @@ local function LoadOptions()
 
         if hudIdx == "hud1" then
             options[hudIdx].AlwaysOnTop              = lib_helpers.NotNilOrDefault(options[hudIdx].AlwaysOnTop, true)
+        else
+            options[hudIdx].AlwaysOnTop              = lib_helpers.NotNilOrDefault(options[hudIdx].AlwaysOnTop, true)
         end
 
         if options[hudIdx].reverseItemDirection then
@@ -701,6 +703,7 @@ local last_floor_time = 0
 local cache_floor = nil
 local itemCount = 0
 local lastNumHUDs = options.numHUDs
+local firstLoad = true
 
 local function PresentHud(hudIdx)
     
@@ -750,6 +753,7 @@ local function present()
     end
     ConfigurationWindow.Update()
 
+    local configChanged = ConfigurationWindow.changed
     if ConfigurationWindow.changed then
         ConfigurationWindow.changed = false
         if options.numHUDs > lastNumHUDs then
@@ -791,7 +795,7 @@ local function present()
         AppendItemFacingFromCurPlayer(item,playerSelfNormDir)
     end
 
-    for i=1, options.numHUDs do
+    for i=options.numHUDs, 1, -1 do
         local hudIdx = "hud" .. i
         if (options[hudIdx].EnableWindow == true)
             and (options[hudIdx].HideWhenMenu == false or lib_menu.IsMenuOpen() == false)
@@ -838,7 +842,7 @@ local function present()
                     options[hudIdx].AlwaysAutoResize,
                     options[hudIdx].changed)
             end
-            if (options.tileAllHuds and hudIdx == "hud1") or options[hudIdx].AlwaysOnTop then
+            if (((options.tileAllHuds and hudIdx == "hud1") or options[hudIdx].AlwaysOnTop) and configChanged) or firstLoad then
                 imgui.SetWindowFocus()
             end
             imgui.End()
@@ -856,7 +860,7 @@ local function present()
             options[hudIdx].changed = false
         end
     end
-
+    firstLoad = false
 end
 
 local function init()

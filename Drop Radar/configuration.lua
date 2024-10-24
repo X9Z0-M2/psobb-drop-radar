@@ -95,7 +95,7 @@ local function ConfigurationWindow(configuration)
         imgui.PopItemWidth()
     
         imgui.SameLine(0, 5)
-        imgui.ColorButton(i_custom[2] / 255, i_custom[3] / 255, i_custom[4] / 255, 1.0)
+        imgui.ColorButton(i_custom[2] / 255, i_custom[3] / 255, i_custom[4] / 255, i_custom[1] / 255)
         if imgui.IsItemHovered() then
             imgui.SetTooltip(
                 string.format(
@@ -290,10 +290,32 @@ local function ConfigurationWindow(configuration)
         for i=1, numHUDsToIterate do
             local hudIdx = "hud" .. i
             local nodeName = "Hud " .. i
+            if _configuration[hudIdx].customHudColorEnable then
+                local i_custom =
+                {
+                    bit.band(bit.rshift(_configuration[hudIdx].customHudColorMarker, 24), 0xFF),
+                    bit.band(bit.rshift(_configuration[hudIdx].customHudColorMarker, 16), 0xFF),
+                    bit.band(bit.rshift(_configuration[hudIdx].customHudColorMarker, 8), 0xFF),
+                    bit.band(_configuration[hudIdx].customHudColorMarker, 0xFF)
+                }
+                imgui.ColorButton(i_custom[2] / 255, i_custom[3] / 255, i_custom[4] / 255, i_custom[1] / 255)
+                if imgui.IsItemHovered() then
+                    imgui.SetTooltip(
+                        string.format(
+                            "#%02X%02X%02X%02X",
+                            i_custom[4],
+                            i_custom[1],
+                            i_custom[2],
+                            i_custom[3]
+                        )
+                    )
+                end
+                imgui.SameLine(0, 5)
+            end
+
             if i == 1 then
                 nodeName = "Hud Main"
             end
-
             if imgui.TreeNodeEx(nodeName) then
 
                 local additionalOverrideButtonText = "Enable Additional Hud Overrides"
@@ -309,7 +331,7 @@ local function ConfigurationWindow(configuration)
                 if imgui.Checkbox("Always On Top", _configuration[hudIdx].AlwaysOnTop) then
                     local alwaysOnTop = not _configuration[hudIdx].AlwaysOnTop
                     if alwaysOnTop then
-                        for j=1, _configuration.maxNumHUDs do
+                        for j=1, _configuration.numHUDs do
                             local hudIdx = "hud" .. j
                             _configuration[hudIdx].AlwaysOnTop = false
                         end
@@ -325,86 +347,91 @@ local function ConfigurationWindow(configuration)
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
+                
+                if imgui.TreeNodeEx("Window") then
 
-                PresentOverrideButton("HideWhenMenu", hudIdx)
-                if imgui.Checkbox("Hide when menus are open", _configuration[hudIdx].HideWhenMenu) then
-                    _configuration[hudIdx].HideWhenMenu = not _configuration[hudIdx].HideWhenMenu
-                    this.changed = true
-                end
-
-                PresentOverrideButton("HideWhenSymbolChat", hudIdx)
-                if imgui.Checkbox("Hide when symbol chat/word select is open", _configuration[hudIdx].HideWhenSymbolChat) then
-                    _configuration[hudIdx].HideWhenSymbolChat = not _configuration[hudIdx].HideWhenSymbolChat
-                    this.changed = true
-                end
-
-                PresentOverrideButton("HideWhenMenuUnavailable", hudIdx)
-                if imgui.Checkbox("Hide when the menu is unavailable", _configuration[hudIdx].HideWhenMenuUnavailable) then
-                    _configuration[hudIdx].HideWhenMenuUnavailable = not _configuration[hudIdx].HideWhenMenuUnavailable
-                    this.changed = true
-                end
-
-                PresentOverrideButton("NoTitleBar", hudIdx)
-                if imgui.Checkbox("No title bar", _configuration[hudIdx].NoTitleBar == "NoTitleBar") then
-                    if _configuration[hudIdx].NoTitleBar == "NoTitleBar" then
-                        _configuration[hudIdx].NoTitleBar = ""
-                    else
-                        _configuration[hudIdx].NoTitleBar = "NoTitleBar"
+                    PresentOverrideButton("HideWhenMenu", hudIdx)
+                    if imgui.Checkbox("Hide when menus are open", _configuration[hudIdx].HideWhenMenu) then
+                        _configuration[hudIdx].HideWhenMenu = not _configuration[hudIdx].HideWhenMenu
+                        this.changed = true
                     end
-                    _configuration[hudIdx].changed = true
-                    this.changed = true
-                end
 
-                PresentOverrideButton("NoResize", hudIdx)
-                if imgui.Checkbox("No resize", _configuration[hudIdx].NoResize == "NoResize") then
-                    if _configuration[hudIdx].NoResize == "NoResize" then
-                        _configuration[hudIdx].NoResize = ""
-                    else
-                        _configuration[hudIdx].NoResize = "NoResize"
+                    PresentOverrideButton("HideWhenSymbolChat", hudIdx)
+                    if imgui.Checkbox("Hide when symbol chat/word select is open", _configuration[hudIdx].HideWhenSymbolChat) then
+                        _configuration[hudIdx].HideWhenSymbolChat = not _configuration[hudIdx].HideWhenSymbolChat
+                        this.changed = true
                     end
-                    _configuration[hudIdx].changed = true
-                    this.changed = true
-                end
 
-                PresentOverrideButton("NoMove", hudIdx)
-                if imgui.Checkbox("No move", _configuration[hudIdx].NoMove == "NoMove") then
-                    if _configuration[hudIdx].NoMove == "NoMove" then
-                        _configuration[hudIdx].NoMove = ""
-                    else
-                        _configuration[hudIdx].NoMove = "NoMove"
+                    PresentOverrideButton("HideWhenMenuUnavailable", hudIdx)
+                    if imgui.Checkbox("Hide when the menu is unavailable", _configuration[hudIdx].HideWhenMenuUnavailable) then
+                        _configuration[hudIdx].HideWhenMenuUnavailable = not _configuration[hudIdx].HideWhenMenuUnavailable
+                        this.changed = true
                     end
-                    _configuration[hudIdx].changed = true
-                    this.changed = true
-                end
 
-                PresentOverrideButton("AlwaysAutoResize", hudIdx)
-                if imgui.Checkbox("Always Auto Resize", _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize") then
-                    if _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize" then
-                        _configuration[hudIdx].AlwaysAutoResize = ""
-                    else
-                        _configuration[hudIdx].AlwaysAutoResize = "AlwaysAutoResize"
+                    PresentOverrideButton("NoTitleBar", hudIdx)
+                    if imgui.Checkbox("No title bar", _configuration[hudIdx].NoTitleBar == "NoTitleBar") then
+                        if _configuration[hudIdx].NoTitleBar == "NoTitleBar" then
+                            _configuration[hudIdx].NoTitleBar = ""
+                        else
+                            _configuration[hudIdx].NoTitleBar = "NoTitleBar"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
                     end
-                    _configuration[hudIdx].changed = true
-                    this.changed = true
-                end
 
-                PresentOverrideButton("TransparentWindow", hudIdx)
-                if imgui.Checkbox("Transparent window", _configuration[hudIdx].TransparentWindow) then
-                    _configuration[hudIdx].TransparentWindow = not _configuration[hudIdx].TransparentWindow
-                    _configuration[hudIdx].changed = true
-                    this.changed = true
-                end
+                    PresentOverrideButton("NoResize", hudIdx)
+                    if imgui.Checkbox("No resize", _configuration[hudIdx].NoResize == "NoResize") then
+                        if _configuration[hudIdx].NoResize == "NoResize" then
+                            _configuration[hudIdx].NoResize = ""
+                        else
+                            _configuration[hudIdx].NoResize = "NoResize"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
 
-                PresentOverrideButton("customHudColorEnable", hudIdx)
-                if imgui.Checkbox("Custom Hud Color", _configuration[hudIdx].customHudColorEnable) then
-                    _configuration[hudIdx].customHudColorEnable = not _configuration[hudIdx].customHudColorEnable
-                    this.changed = true
-                end
+                    PresentOverrideButton("NoMove", hudIdx)
+                    if imgui.Checkbox("No move", _configuration[hudIdx].NoMove == "NoMove") then
+                        if _configuration[hudIdx].NoMove == "NoMove" then
+                            _configuration[hudIdx].NoMove = ""
+                        else
+                            _configuration[hudIdx].NoMove = "NoMove"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
 
-                if _configuration[hudIdx].customHudColorEnable then
-                    _configuration[hudIdx].customHudColorMarker     = PresentColorEditor("Marker Color",     0xFFFF9900, _configuration[hudIdx].customHudColorMarker)
-                    _configuration[hudIdx].customHudColorBackground = PresentColorEditor("Background Color", 0x4CCCCCCC, _configuration[hudIdx].customHudColorBackground)
-                    _configuration[hudIdx].customHudColorWindow     = PresentColorEditor("Window Color",     0x46000000, _configuration[hudIdx].customHudColorWindow)
+                    PresentOverrideButton("AlwaysAutoResize", hudIdx)
+                    if imgui.Checkbox("Always Auto Resize", _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize") then
+                        if _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize" then
+                            _configuration[hudIdx].AlwaysAutoResize = ""
+                        else
+                            _configuration[hudIdx].AlwaysAutoResize = "AlwaysAutoResize"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("TransparentWindow", hudIdx)
+                    if imgui.Checkbox("Transparent window", _configuration[hudIdx].TransparentWindow) then
+                        _configuration[hudIdx].TransparentWindow = not _configuration[hudIdx].TransparentWindow
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("customHudColorEnable", hudIdx)
+                    if imgui.Checkbox("Custom Hud Color", _configuration[hudIdx].customHudColorEnable) then
+                        _configuration[hudIdx].customHudColorEnable = not _configuration[hudIdx].customHudColorEnable
+                        this.changed = true
+                    end
+
+                    if _configuration[hudIdx].customHudColorEnable then
+                        _configuration[hudIdx].customHudColorMarker     = PresentColorEditor("Marker Color",     0xFFFF9900, _configuration[hudIdx].customHudColorMarker)
+                        _configuration[hudIdx].customHudColorBackground = PresentColorEditor("Background Color", 0x4CCCCCCC, _configuration[hudIdx].customHudColorBackground)
+                        _configuration[hudIdx].customHudColorWindow     = PresentColorEditor("Window Color",     0x46000000, _configuration[hudIdx].customHudColorWindow)
+                    end
+
+                    imgui.TreePop()
                 end
                 
                 if imgui.TreeNodeEx("Display") then
@@ -494,6 +521,8 @@ local function ConfigurationWindow(configuration)
                         this.changed = true
                         _configuration[hudIdx].ignoreItemMaxDist = clampVal(_configuration[hudIdx].ignoreItemMaxDist, 0, 999999)
                     end
+
+                    imgui.TreePop()
                 end
 
                 if imgui.TreeNodeEx("Custom Sizing") then
