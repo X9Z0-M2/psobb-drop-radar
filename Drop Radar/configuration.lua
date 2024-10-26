@@ -33,24 +33,24 @@ local function ConfigurationWindow(configuration)
 
     local _configuration = configuration
 
-    local function newViewingConeIndicatorData()
+    local function newViewingConeIndicatorData(hudIdx)
         coneIndicatorDataInitd = true
-        viewingConeIndicatorFData = {}
-        viewingConeIndicatorBData = {}
+        viewingConeIndicatorFData[hudIdx] = {}
+        viewingConeIndicatorBData[hudIdx] = {}
         for i=1, 180 do
-            if _configuration.viewingConeDegs >= math.abs(i-90) then
-                table.insert(viewingConeIndicatorFData, math.sin((i+3)/60)*100)
+            if _configuration[hudIdx].viewingConeDegs >= math.abs(i-90) then
+                table.insert(viewingConeIndicatorFData[hudIdx], math.sin((i+3)/60)*100)
             else
-                table.insert(viewingConeIndicatorFData, 0)
+                table.insert(viewingConeIndicatorFData[hudIdx], 0)
             end
         end
 
-        local adjustViewDegs = (180 - _configuration.viewingConeDegs-90)+90
+        local adjustViewDegs = (180 - _configuration[hudIdx].viewingConeDegs-90)+90
         for i=1, 180 do
             if adjustViewDegs <= math.abs(i-90) then
-                table.insert(viewingConeIndicatorBData, math.sin((i+192)/60)*100+100)
+                table.insert(viewingConeIndicatorBData[hudIdx], math.sin((i+192)/60)*100+100)
             else
-                table.insert(viewingConeIndicatorBData, 0)
+                table.insert(viewingConeIndicatorBData[hudIdx], 0)
             end
         end
     end
@@ -166,8 +166,14 @@ local function ConfigurationWindow(configuration)
         end
     end
 
+    local function initConeIndicatorData()
+        for j=1, _configuration.numHUDs do
+            local hudIdx = "hud" .. j
+            newViewingConeIndicatorData(hudIdx)
+        end
+    end 
     if not coneIndicatorDataInitd then
-        newViewingConeIndicatorData()
+        initConeIndicatorData()
     end
 
     local _showWindowSettings = function()
@@ -240,6 +246,11 @@ local function ConfigurationWindow(configuration)
                 this.changed = true
             end
 
+            if imgui.Checkbox("Relative to Camera", _configuration.relativeCamera) then
+                _configuration.relativeCamera = not _configuration.relativeCamera
+                this.changed = true
+            end
+
             if imgui.Checkbox("Tile All Huds Together", _configuration.tileAllHuds) then
                 _configuration.tileAllHuds = not _configuration.tileAllHuds
                 this.changed = true
@@ -284,6 +295,7 @@ local function ConfigurationWindow(configuration)
         local numHUDsToIterate
         if numHUDsChanged and _configuration.numHUDs > lastNumHUDs then
             numHUDsToIterate = lastNumHUDs
+            initConeIndicatorData()
         else
             numHUDsToIterate = _configuration.numHUDs
         end
@@ -492,8 +504,8 @@ local function ConfigurationWindow(configuration)
                         this.changed = true
                     end
 
-                    imgui.PlotHistogram("Front", viewingConeIndicatorFData, 180, 0, "", 0, 100, 140, 20)
-                    imgui.PlotHistogram("Back", viewingConeIndicatorBData, 180, 0, "", 0, 100, 140, 20)
+                    imgui.PlotHistogram("Front", viewingConeIndicatorFData[hudIdx], 180, 0, "", 0, 100, 140, 20)
+                    imgui.PlotHistogram("Back", viewingConeIndicatorBData[hudIdx], 180, 0, "", 0, 100, 140, 20)
 
                     PresentOverrideButton("viewingConeDegs", hudIdx)
                     imgui.PushItemWidth(140)
@@ -501,7 +513,7 @@ local function ConfigurationWindow(configuration)
                     imgui.PopItemWidth()
                     if success then
                         this.changed = true
-                        newViewingConeIndicatorData()
+                        newViewingConeIndicatorData(hudIdx)
                     end
         
                     PresentOverrideButton("viewHudPrecision", hudIdx)
