@@ -20,6 +20,7 @@ local function LoadOptions()
     options.configurationEnableWindow = lib_helpers.NotNilOrDefault(options.configurationEnableWindow, true)
     options.enable                    = lib_helpers.NotNilOrDefault(options.enable, true)
     options.ignoreMeseta              = lib_helpers.NotNilOrDefault(options.ignoreMeseta, false)
+    options.relativeCamera            = lib_helpers.NotNilOrDefault(options.relativeCamera, false)
     options.maxNumHUDs                = lib_helpers.NotNilOrDefault(options.maxNumHUDs, 20)
     options.numHUDs                   = lib_helpers.NotNilOrDefault(options.numHUDs, 1)
     options.tileAllHuds               = lib_helpers.NotNilOrDefault(options.tileAllHuds, true)
@@ -264,6 +265,12 @@ local playerSelfNormDir = nil
 local item_graph_data = {}
 local item_graph_size = {}
 local toolLookupTable = {}
+local _CameraPosX = 0x00A48780
+local _CameraPosY = 0x00A48784
+local _CameraPosZ = 0x00A48788
+local _CameraDirX = 0x00A4878C
+local _CameraDirY = 0x00A48790
+local _CameraDirZ = 0x00A48794
 
 local function updateToolLookupTable()
     for i=1, options.numHUDs do
@@ -338,6 +345,42 @@ local function GetPlayerDirection(player)
     return
     {
         x = x,
+        z = z,
+    }
+end
+
+local function getCameraCoordinates()
+    local x = 0
+    local y = 0
+    local z = 0
+    if true then
+        x = pso.read_f32(_CameraPosX)
+        y = pso.read_f32(_CameraPosY)
+        z = pso.read_f32(_CameraPosZ)
+    end
+
+    return
+    {
+        x = x,
+        y = y,
+        z = z,
+    }
+end
+local function getCameraDirection()
+    -- obtained values are Not a normalized unit vector (of scalar 1)
+    local x = 0 -- -1 to 1 in x direction (west to east)
+    local z = 0 -- -1 to 1 in z direction (north to south)
+    local y = 0 -- pitch
+    if true then
+        x = pso.read_f32(_CameraDirX)
+        y = pso.read_f32(_CameraDirY)
+        z = pso.read_f32(_CameraDirZ)
+    end
+    
+    return
+    {
+        x = x,
+        y = y,
         z = z,
     }
 end
@@ -785,10 +828,22 @@ local function present()
     local myFloor = lib_characters.GetCurrentFloorSelf()
 --needed?
 
+
     playerSelfAddr    = lib_characters.GetSelf()
-    playerSelfCoords  = GetPlayerCoordinates(playerSelfAddr)
-    playerSelfDirs    = GetPlayerDirection(playerSelfAddr)
-    playerSelfNormDir = NormalizeVec2(playerSelfDirs)
+
+    if options.relativeCamera then
+        cameraCoords      = getCameraCoordinates()
+        cameraDirs        = getCameraDirection()
+        cameraNormDirVec2 = NormalizeVec2(cameraDirs)
+        playerSelfCoords  = cameraCoords
+        playerSelfDirs    = cameraDirs
+        playerSelfNormDir = cameraNormDirVec2
+    else
+        playerSelfCoords  = GetPlayerCoordinates(playerSelfAddr)
+        playerSelfDirs    = GetPlayerDirection(playerSelfAddr)
+        playerSelfNormDir = NormalizeVec2(playerSelfDirs)
+    end
+
 
     for i=1,itemCount,1 do
         local item = cache_floor[i]
