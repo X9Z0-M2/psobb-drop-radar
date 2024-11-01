@@ -152,6 +152,11 @@ local function ConfigurationWindow(configuration)
                 end
                 this.changed = true
             end
+            if hudIdx == "hud1" then
+                if imgui.IsItemHovered() then imgui.SetTooltip("Forcibly Override '" .. buttonName .. "' on other Huds with 'Sync Additional Hud Overrides' enabled") end
+            else
+                if imgui.IsItemHovered() then imgui.SetTooltip("Forcibly Sync '" .. buttonName .. "' setting from Main Hud") end
+            end
             imgui.SameLine(0, 4)
         end
     end
@@ -250,11 +255,13 @@ local function ConfigurationWindow(configuration)
                 _configuration.relativeCamera = not _configuration.relativeCamera
                 this.changed = true
             end
+            if imgui.IsItemHovered() then imgui.SetTooltip("Items on Hud should be relative to camera's angle instead of player") end
 
             if imgui.Checkbox("Tile All Huds Together", _configuration.tileAllHuds) then
                 _configuration.tileAllHuds = not _configuration.tileAllHuds
                 this.changed = true
             end
+            if imgui.IsItemHovered() then imgui.SetTooltip("Stack All Huds on top of each other, starting with Main Hud") end
             if _configuration.tileAllHuds then
                 for j=2, _configuration.numHUDs do
                     local hudIdx = "hud" .. j
@@ -266,7 +273,8 @@ local function ConfigurationWindow(configuration)
 
             imgui.PushItemWidth(100)
             lastNumHUDs =_configuration.numHUDs
-            success, _configuration.numHUDs = imgui.InputInt("Num Huds (for more colors) <- (WARNING: fps performance!)", _configuration.numHUDs)
+            success, _configuration.numHUDs = imgui.InputInt("Num Huds", _configuration.numHUDs)
+            if imgui.IsItemHovered() then imgui.SetTooltip("For more colors if stacked to a 'main hud' (WARNING: fps performance!)") end
             imgui.PopItemWidth()
             if success then
                 this.changed = true
@@ -338,6 +346,7 @@ local function ConfigurationWindow(configuration)
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
+                if imgui.IsItemHovered() then imgui.SetTooltip("Enable Forcibly Overriding Settings to control from Main Hud") end
 
                 if imgui.Checkbox("Always On Top", _configuration[hudIdx].AlwaysOnTop) then
                     local alwaysOnTop = not _configuration[hudIdx].AlwaysOnTop
@@ -351,6 +360,7 @@ local function ConfigurationWindow(configuration)
                     _configuration[hudIdx].changed = true
                     this.changed = true
                 end
+                if imgui.IsItemHovered() then imgui.SetTooltip("Forces This Hud On top of the rest, disabling this setting across all other Huds") end
 
                 PresentOverrideButton("EnableWindow", hudIdx)
                 if imgui.Checkbox("Enable", _configuration[hudIdx].EnableWindow) then
@@ -484,12 +494,14 @@ local function ConfigurationWindow(configuration)
                         end
                         this.changed = true
                     end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("When Item is on right side of Hud, place mark on opposite and vice versa") end
         
                     PresentOverrideButton("clampItemView", hudIdx)
                     if imgui.Checkbox("Clamp Item Into View", _configuration[hudIdx].clampItemView) then
                         _configuration[hudIdx].clampItemView = not _configuration[hudIdx].clampItemView
                         this.changed = true
                     end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("All Visible Markers are not excluded from view, just held far right or left until turned around to face it") end
         
                     PresentOverrideButton("invertViewData", hudIdx)
                     if imgui.Checkbox("Invert View", _configuration[hudIdx].invertViewData) then
@@ -507,7 +519,9 @@ local function ConfigurationWindow(configuration)
                         newViewingConeIndicatorData(hudIdx)
                     end
                     imgui.PlotHistogram("Front", viewingConeIndicatorFData[hudIdx], 180, 0, "", 0, 100, 140, 20)
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Shows a representation of the viewing cone, 90 degrees is everything infront and directly to the sides") end
                     imgui.PlotHistogram("Back", viewingConeIndicatorBData[hudIdx], 180, 0, "", 0, 100, 140, 20)
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Shows viewing angle behind, no longer a 'cone' infront but a 'pie' with a slice taken") end
 
                     PresentOverrideButton("viewingConeDegs", hudIdx)
                     imgui.PushItemWidth(140)
@@ -526,6 +540,7 @@ local function ConfigurationWindow(configuration)
                         this.changed = true
                         _configuration[hudIdx].viewHudPrecision = clampVal(_configuration[hudIdx].viewHudPrecision, 0, 999999)
                     end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Adjust so there are no awkward gaps between") end
         
                     PresentOverrideButton("ignoreItemMaxDist", hudIdx)
                     imgui.PushItemWidth(100)
@@ -535,6 +550,7 @@ local function ConfigurationWindow(configuration)
                         this.changed = true
                         _configuration[hudIdx].ignoreItemMaxDist = clampVal(_configuration[hudIdx].ignoreItemMaxDist, 0, 999999)
                     end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Filter out items further than the distance. Set to 0 for no filter") end
 
                     imgui.TreePop()
                 end
