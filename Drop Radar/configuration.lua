@@ -295,7 +295,6 @@ local function ConfigurationWindow(configuration)
         local numHUDsToIterate
         if numHUDsChanged and _configuration.numHUDs > lastNumHUDs then
             numHUDsToIterate = lastNumHUDs
-            initConeIndicatorData()
         else
             numHUDsToIterate = _configuration.numHUDs
         end
@@ -504,6 +503,9 @@ local function ConfigurationWindow(configuration)
                         this.changed = true
                     end
 
+                    if viewingConeIndicatorFData[hudIdx] == nil or type(viewingConeIndicatorFData[hudIdx]) ~= "table" then
+                        newViewingConeIndicatorData(hudIdx)
+                    end
                     imgui.PlotHistogram("Front", viewingConeIndicatorFData[hudIdx], 180, 0, "", 0, 100, 140, 20)
                     imgui.PlotHistogram("Back", viewingConeIndicatorBData[hudIdx], 180, 0, "", 0, 100, 140, 20)
 
