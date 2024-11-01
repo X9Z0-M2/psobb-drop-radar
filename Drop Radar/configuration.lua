@@ -13,6 +13,15 @@ end
 local function Lerp(Norm,Min,Max)
     return (Max - Min) * Norm + Min
 end
+local function shiftHexColor(color)
+    return
+    {
+        bit.band(bit.rshift(color, 24), 0xFF),
+        bit.band(bit.rshift(color, 16), 0xFF),
+        bit.band(bit.rshift(color, 8), 0xFF),
+        bit.band(color, 0xFF)
+    }
+end
 
 local function ConfigurationWindow(configuration)
     local this =
@@ -24,24 +33,24 @@ local function ConfigurationWindow(configuration)
 
     local _configuration = configuration
 
-    local function newViewingConeIndicatorData()
+    local function newViewingConeIndicatorData(hudIdx)
         coneIndicatorDataInitd = true
-        viewingConeIndicatorFData = {}
-        viewingConeIndicatorBData = {}
+        viewingConeIndicatorFData[hudIdx] = {}
+        viewingConeIndicatorBData[hudIdx] = {}
         for i=1, 180 do
-            if _configuration.viewingConeDegs >= math.abs(i-90) then
-                table.insert(viewingConeIndicatorFData, math.sin((i+3)/60)*100)
+            if _configuration[hudIdx].viewingConeDegs >= math.abs(i-90) then
+                table.insert(viewingConeIndicatorFData[hudIdx], math.sin((i+3)/60)*100)
             else
-                table.insert(viewingConeIndicatorFData, 0)
+                table.insert(viewingConeIndicatorFData[hudIdx], 0)
             end
         end
 
-        local adjustViewDegs = (180 - _configuration.viewingConeDegs-90)+90
+        local adjustViewDegs = (180 - _configuration[hudIdx].viewingConeDegs-90)+90
         for i=1, 180 do
             if adjustViewDegs <= math.abs(i-90) then
-                table.insert(viewingConeIndicatorBData, math.sin((i+192)/60)*100+100)
+                table.insert(viewingConeIndicatorBData[hudIdx], math.sin((i+192)/60)*100+100)
             else
-                table.insert(viewingConeIndicatorBData, 0)
+                table.insert(viewingConeIndicatorBData[hudIdx], 0)
             end
         end
     end
@@ -86,7 +95,7 @@ local function ConfigurationWindow(configuration)
         imgui.PopItemWidth()
     
         imgui.SameLine(0, 5)
-        imgui.ColorButton(i_custom[2] / 255, i_custom[3] / 255, i_custom[4] / 255, 1.0)
+        imgui.ColorButton(i_custom[2] / 255, i_custom[3] / 255, i_custom[4] / 255, i_custom[1] / 255)
         if imgui.IsItemHovered() then
             imgui.SetTooltip(
                 string.format(
@@ -128,8 +137,48 @@ local function ConfigurationWindow(configuration)
         return custom
     end
 
+    local function PresentOverrideButton(buttonName, hudIdx)
+        if _configuration[hudIdx].AdditionalHudOverrides then
+            local overrideName = buttonName .. "Override"
+            if imgui.Checkbox("##" .. overrideName, _configuration[hudIdx][overrideName]) then
+                _configuration[hudIdx][overrideName] = not _configuration[hudIdx][overrideName]
+                _configuration[hudIdx].changed = true
+                if hudIdx == "hud1" then
+                    for j=2, _configuration.numHUDs do
+                        local hudIdx = "hud" .. j
+                        _configuration[hudIdx][overrideName] = _configuration["hud1"][overrideName]
+                        _configuration[hudIdx].changed = true
+                    end
+                end
+                this.changed = true
+            end
+            if hudIdx == "hud1" then
+                if imgui.IsItemHovered() then imgui.SetTooltip("Forcibly Override '" .. buttonName .. "' on other Huds with 'Sync Additional Hud Overrides' enabled") end
+            else
+                if imgui.IsItemHovered() then imgui.SetTooltip("Forcibly Sync '" .. buttonName .. "' setting from Main Hud") end
+            end
+            imgui.SameLine(0, 4)
+        end
+    end
+
+    local function CopyOverridedSettings(buttonName, hudIdx)
+        if _configuration[hudIdx].AdditionalHudOverrides then
+            local overrideName = buttonName .. "Override"
+            if _configuration[hudIdx][overrideName] then
+                _configuration[hudIdx][buttonName] = _configuration["hud1"][buttonName]
+                _configuration[hudIdx].changed = true
+            end
+        end
+    end
+
+    local function initConeIndicatorData()
+        for j=1, _configuration.numHUDs do
+            local hudIdx = "hud" .. j
+            newViewingConeIndicatorData(hudIdx)
+        end
+    end 
     if not coneIndicatorDataInitd then
-        newViewingConeIndicatorData()
+        initConeIndicatorData()
     end
 
     local _showWindowSettings = function()
@@ -188,6 +237,9 @@ local function ConfigurationWindow(configuration)
             return Setting, Setting2
         end
 
+        local numHUDsChanged = false
+        local lastNumHUDs
+
         if imgui.TreeNodeEx("General", "DefaultOpen") then
             if imgui.Checkbox("Enable", _configuration.enable) then
                 _configuration.enable = not _configuration.enable
@@ -199,61 +251,36 @@ local function ConfigurationWindow(configuration)
                 this.changed = true
             end
 
-            if imgui.Checkbox("Reverse Item Direction", _configuration.reverseItemDirection) then
-                _configuration.reverseItemDirection = not _configuration.reverseItemDirection
+            if imgui.Checkbox("Relative to Camera", _configuration.relativeCamera) then
+                _configuration.relativeCamera = not _configuration.relativeCamera
                 this.changed = true
             end
+            if imgui.IsItemHovered() then imgui.SetTooltip("Items on Hud should be relative to camera's angle instead of player") end
 
-            if imgui.Checkbox("Clamp Item Into View", _configuration.clampItemView) then
-                _configuration.clampItemView = not _configuration.clampItemView
+            if imgui.Checkbox("Tile All Huds Together", _configuration.tileAllHuds) then
+                _configuration.tileAllHuds = not _configuration.tileAllHuds
                 this.changed = true
             end
-
-            if imgui.Checkbox("Invert View", _configuration.invertViewData) then
-                _configuration.invertViewData = not _configuration.invertViewData
-                this.changed = true
-            end
-
-            if imgui.Checkbox("Invert Tick Markers", _configuration.invertTickMarkers) then
-                _configuration.invertTickMarkers = not _configuration.invertTickMarkers
-                this.changed = true
-            end
-
-            if imgui.Checkbox("Custom Hud Color", _configuration.customHudColorEnable) then
-                _configuration.customHudColorEnable = not _configuration.customHudColorEnable
-                this.changed = true
-            end
-
-            if _configuration.customHudColorEnable then
-                _configuration.customHudColorMarker = PresentColorEditor("Marker Color", 0xFFFF9900, _configuration.customHudColorMarker)
-                _configuration.customHudColorBackground = PresentColorEditor("Background Color", 0x4CCCCCCC, _configuration.customHudColorBackground)
-                _configuration.customHudColorWindow = PresentColorEditor("Window Color", 0x46000000, _configuration.customHudColorWindow)
-            end
-
-            imgui.PlotHistogram("Front", viewingConeIndicatorFData, 180, 0, "", 0, 100, 140, 20)
-            imgui.PlotHistogram("Back", viewingConeIndicatorBData, 180, 0, "", 0, 100, 140, 20)
-            imgui.PushItemWidth(140)
-            success, _configuration.viewingConeDegs = imgui.SliderInt("Viewing Cone (Degrees)", _configuration.viewingConeDegs, 0, 180)
-            imgui.PopItemWidth()
-            if success then
-                this.changed = true
-                newViewingConeIndicatorData()
-            end
-
-            imgui.PushItemWidth(140)
-            success, _configuration.viewHudPrecision = imgui.SliderFloat("View Precision (> may lag)", _configuration.viewHudPrecision, 0.1, 2)
-            imgui.PopItemWidth()
-            if success then
-                this.changed = true
-                _configuration.viewHudPrecision = clampVal(_configuration.viewHudPrecision, 0, 999999)
+            if imgui.IsItemHovered() then imgui.SetTooltip("Stack All Huds on top of each other, starting with Main Hud") end
+            if _configuration.tileAllHuds then
+                for j=2, _configuration.numHUDs do
+                    local hudIdx = "hud" .. j
+                    _configuration[hudIdx].Anchor = _configuration["hud1"].Anchor
+                    _configuration[hudIdx].X      = _configuration["hud1"].X
+                    _configuration[hudIdx].Y      = _configuration["hud1"].Y
+                end
             end
 
             imgui.PushItemWidth(100)
-            success, _configuration.ignoreItemMaxDist = imgui.InputInt("Ignore Item Distance (far)", _configuration.ignoreItemMaxDist)
+            lastNumHUDs =_configuration.numHUDs
+            success, _configuration.numHUDs = imgui.InputInt("Num Huds", _configuration.numHUDs)
+            if imgui.IsItemHovered() then imgui.SetTooltip("For more colors if stacked to a 'main hud' (WARNING: fps performance!)") end
             imgui.PopItemWidth()
             if success then
                 this.changed = true
-                _configuration.ignoreItemMaxDist = clampVal(_configuration.ignoreItemMaxDist, 0, 999999)
+                numHUDsChanged = true
+                _configuration.maxNumHUDs = 20
+                _configuration.numHUDs = clampVal(_configuration.numHUDs, 1, _configuration.maxNumHUDs)
             end
 
             imgui.PushItemWidth(100)
@@ -273,353 +300,590 @@ local function ConfigurationWindow(configuration)
             imgui.TreePop()
         end
 
-        if imgui.TreeNodeEx("Hud") then
-            if imgui.Checkbox("Enable", _configuration.hud.EnableWindow) then
-                _configuration.hud.EnableWindow = not _configuration.hud.EnableWindow
-                _configuration.hud.changed = true
-                this.changed = true
+        local numHUDsToIterate
+        if numHUDsChanged and _configuration.numHUDs > lastNumHUDs then
+            numHUDsToIterate = lastNumHUDs
+        else
+            numHUDsToIterate = _configuration.numHUDs
+        end
+        for i=1, numHUDsToIterate do
+            local hudIdx = "hud" .. i
+            local nodeName = "Hud " .. i
+            if _configuration[hudIdx].customHudColorEnable then
+                local i_custom =
+                {
+                    bit.band(bit.rshift(_configuration[hudIdx].customHudColorMarker, 24), 0xFF),
+                    bit.band(bit.rshift(_configuration[hudIdx].customHudColorMarker, 16), 0xFF),
+                    bit.band(bit.rshift(_configuration[hudIdx].customHudColorMarker, 8), 0xFF),
+                    bit.band(_configuration[hudIdx].customHudColorMarker, 0xFF)
+                }
+                imgui.ColorButton(i_custom[2] / 255, i_custom[3] / 255, i_custom[4] / 255, i_custom[1] / 255)
+                if imgui.IsItemHovered() then
+                    imgui.SetTooltip(
+                        string.format(
+                            "#%02X%02X%02X%02X",
+                            i_custom[4],
+                            i_custom[1],
+                            i_custom[2],
+                            i_custom[3]
+                        )
+                    )
+                end
+                imgui.SameLine(0, 5)
             end
 
-        if imgui.Checkbox("Hide when menus are open", _configuration.hud.HideWhenMenu) then
-                _configuration.hud.HideWhenMenu = not _configuration.hud.HideWhenMenu
-                this.changed = true
+            if i == 1 then
+                nodeName = "Hud Main"
             end
-            if imgui.Checkbox("Hide when symbol chat/word select is open", _configuration.hud.HideWhenSymbolChat) then
-                _configuration.hud.HideWhenSymbolChat = not _configuration.hud.HideWhenSymbolChat
-                this.changed = true
-            end
-            if imgui.Checkbox("Hide when the menu is unavailable", _configuration.hud.HideWhenMenuUnavailable) then
-                _configuration.hud.HideWhenMenuUnavailable = not _configuration.hud.HideWhenMenuUnavailable
-                this.changed = true
-            end
+            if imgui.TreeNodeEx(nodeName) then
 
-            if imgui.Checkbox("No title bar", _configuration.hud.NoTitleBar == "NoTitleBar") then
-                if _configuration.hud.NoTitleBar == "NoTitleBar" then
-                    _configuration.hud.NoTitleBar = ""
-                else
-                    _configuration.hud.NoTitleBar = "NoTitleBar"
+                local additionalOverrideButtonText = "Enable Additional Hud Overrides"
+                if i > 1 then
+                    additionalOverrideButtonText = "Sync Additional Hud Overrides"
                 end
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-            if imgui.Checkbox("No resize", _configuration.hud.NoResize == "NoResize") then
-                if _configuration.hud.NoResize == "NoResize" then
-                    _configuration.hud.NoResize = ""
-                else
-                    _configuration.hud.NoResize = "NoResize"
-                end
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-            if imgui.Checkbox("No move", _configuration.hud.NoMove == "NoMove") then
-                if _configuration.hud.NoMove == "NoMove" then
-                    _configuration.hud.NoMove = ""
-                else
-                    _configuration.hud.NoMove = "NoMove"
-                end
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-            if imgui.Checkbox("Always Auto Resize", _configuration.hud.AlwaysAutoResize == "AlwaysAutoResize") then
-                if _configuration.hud.AlwaysAutoResize == "AlwaysAutoResize" then
-                    _configuration.hud.AlwaysAutoResize = ""
-                else
-                    _configuration.hud.AlwaysAutoResize = "AlwaysAutoResize"
-                end
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-
-            if imgui.Checkbox("Transparent window", _configuration.hud.TransparentWindow) then
-                _configuration.hud.TransparentWindow = not _configuration.hud.TransparentWindow
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-
-            if imgui.TreeNodeEx("Custom Sizing") then
-                local SWidth = 110
-                local SWidthP = SWidth + 16
-                local SizingRange = {0,100}
-                local MarkerSizeRange = {0.001,5}
-                local MesetaRange = {1,999999}
-                local TechRange = {1,30}
-                local TechAntiRange = {1,7}
-
-                if imgui.TreeNodeEx("Non-Rares") then
-                
-                    imgui.PushItemWidth(SWidthP)
-                    success, _configuration.hud.sizing.HitMin = imgui.SliderInt("Minimum Hit", _configuration.hud.sizing.HitMin,-10, 100)
-                    imgui.PopItemWidth()
-                    if success then
-                        this.changed = true
-                    end
-
-                    _configuration.hud.sizing.LowHitWeaponsW, _configuration.hud.sizing.LowHitWeaponsH = 
-                    dropSizing("Low Hit Weapons", _configuration.hud.sizing.LowHitWeaponsW, _configuration.hud.sizing.LowHitWeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.HighHitWeaponsW, _configuration.hud.sizing.HighHitWeaponsH = 
-                    dropSizing("High Hit Weapons", _configuration.hud.sizing.HighHitWeaponsW, _configuration.hud.sizing.HighHitWeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.UselessArmorsW, _configuration.hud.sizing.UselessArmorsH = 
-                    dropSizing("<4s Armor", _configuration.hud.sizing.UselessArmorsW, _configuration.hud.sizing.UselessArmorsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.MaxSocketArmorW, _configuration.hud.sizing.MaxSocketArmorH = 
-                    dropSizing("=4s Armor", _configuration.hud.sizing.MaxSocketArmorW, _configuration.hud.sizing.MaxSocketArmorH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.UselessBarriersW, _configuration.hud.sizing.UselessBarriersH = 
-                    dropSizing("Useless Barriers", _configuration.hud.sizing.UselessBarriersW, _configuration.hud.sizing.UselessBarriersH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.UselessUnitsW, _configuration.hud.sizing.UselessUnitsH = 
-                    dropSizing("Useless Units", _configuration.hud.sizing.UselessUnitsW, _configuration.hud.sizing.UselessUnitsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.UselessTechsW, _configuration.hud.sizing.UselessTechsH = 
-                    dropSizing("Useless Techs", _configuration.hud.sizing.UselessTechsW, _configuration.hud.sizing.UselessTechsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.MesetaW, _configuration.hud.sizing.MesetaMinH = 
-                    dropSizing("Meseta Height Min", _configuration.hud.sizing.MesetaW, _configuration.hud.sizing.MesetaMinH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.MesetaW, _configuration.hud.sizing.MesetaMaxH = 
-                    dropSizing("Meseta Height Max", _configuration.hud.sizing.MesetaW, _configuration.hud.sizing.MesetaMaxH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    imgui.PushItemWidth(SWidthP)
-                    success, _configuration.hud.sizing.MesetaMin = imgui.DragInt("Meseta Min (will filter)", _configuration.hud.sizing.MesetaMin, 10, MesetaRange[1], MesetaRange[2])
-                    imgui.PopItemWidth()
-                    if success then
-                        this.changed = true
-                    end
-                    if _configuration.hud.sizing.MesetaMin > _configuration.hud.sizing.MesetaMax then
-                        _configuration.hud.sizing.MesetaMin = _configuration.hud.sizing.MesetaMax
-                    end
-
-                    imgui.PushItemWidth(SWidthP)
-                    success, _configuration.hud.sizing.MesetaMax = imgui.DragInt("Meseta Max (not a filter)", _configuration.hud.sizing.MesetaMax, 10, MesetaRange[1], MesetaRange[2])
-                    imgui.PopItemWidth()
-                    if success then
-                        this.changed = true
-                    end
-                    if _configuration.hud.sizing.MesetaMax < _configuration.hud.sizing.MesetaMin then
-                        _configuration.hud.sizing.MesetaMax = _configuration.hud.sizing.MesetaMin
-                    end
-
-                    imgui.TreePop()
-                end
-
-                
-                if imgui.TreeNodeEx("Rares") then
-
-                    _configuration.hud.sizing.WeaponsW, _configuration.hud.sizing.WeaponsH = 
-                    dropSizing("Weapons", _configuration.hud.sizing.WeaponsW, _configuration.hud.sizing.WeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.SRankWeaponsW, _configuration.hud.sizing.SRankWeaponsH = 
-                    dropSizing("SRank Weapons", _configuration.hud.sizing.SRankWeaponsW, _configuration.hud.sizing.SRankWeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.ArmorsW, _configuration.hud.sizing.ArmorsH = 
-                    dropSizing("Armor", _configuration.hud.sizing.ArmorsW, _configuration.hud.sizing.ArmorsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.BarriersW, _configuration.hud.sizing.BarriersH = 
-                    dropSizing("Barriers", _configuration.hud.sizing.BarriersW, _configuration.hud.sizing.BarriersH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.UnitsW, _configuration.hud.sizing.UnitsH = 
-                    dropSizing("Units", _configuration.hud.sizing.UnitsW, _configuration.hud.sizing.UnitsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.MagsW, _configuration.hud.sizing.MagsH = 
-                    dropSizing("Mags", _configuration.hud.sizing.MagsW, _configuration.hud.sizing.MagsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.ConsumablesW, _configuration.hud.sizing.ConsumablesH = 
-                    dropSizing("Consumables", _configuration.hud.sizing.ConsumablesW, _configuration.hud.sizing.ConsumablesH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    imgui.TreePop()
-                end
-                
-                if imgui.TreeNodeEx("Techs") then
-
-                    _configuration.hud.sizing.TechReverserW, _configuration.hud.sizing.TechReverserH = 
-                    dropSizing("Reverser", _configuration.hud.sizing.TechReverserW, _configuration.hud.sizing.TechReverserH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechRyukerW, _configuration.hud.sizing.TechRyukerH = 
-                    dropSizing("Ryuker", _configuration.hud.sizing.TechRyukerW, _configuration.hud.sizing.TechRyukerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechAnti5W, _configuration.hud.sizing.TechAnti5H = 
-                    dropSizing("Anti 5", _configuration.hud.sizing.TechAnti5W, _configuration.hud.sizing.TechAnti5H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechAnti7W, _configuration.hud.sizing.TechAnti7H = 
-                    dropSizing("Anti 7", _configuration.hud.sizing.TechAnti7W, _configuration.hud.sizing.TechAnti7H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechSupport15W, _configuration.hud.sizing.TechSupport15H = 
-                    dropSizing("Support Tech 15", _configuration.hud.sizing.TechSupport15W, _configuration.hud.sizing.TechSupport15H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechSupport20W, _configuration.hud.sizing.TechSupport20H = 
-                    dropSizing("Support Tech 20", _configuration.hud.sizing.TechSupport20W, _configuration.hud.sizing.TechSupport20H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechAttack15W, _configuration.hud.sizing.TechAttack15H = 
-                    dropSizing("Attack Tech 15", _configuration.hud.sizing.TechAttack15W, _configuration.hud.sizing.TechAttack15H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechAttack20W, _configuration.hud.sizing.TechAttack20H = 
-                    dropSizing("Attack Tech 20", _configuration.hud.sizing.TechAttack20W, _configuration.hud.sizing.TechAttack20H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechSupport30W, _configuration.hud.sizing.TechSupport30H = 
-                    dropSizing("Support Tech", _configuration.hud.sizing.TechSupport30W, _configuration.hud.sizing.TechSupport30H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.TechAttack30W, _configuration.hud.sizing.TechAttack30H = 
-                    dropSizing("Attack Tech", _configuration.hud.sizing.TechAttack30W, _configuration.hud.sizing.TechAttack30H, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TechMegidW, _configuration.hud.sizing.TechMegidH = 
-                    dropSizing("Megid", _configuration.hud.sizing.TechMegidW, _configuration.hud.sizing.TechMegidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-                    
-                    _configuration.hud.sizing.TechGrantsW, _configuration.hud.sizing.TechGrantsH = 
-                    dropSizing("Grants", _configuration.hud.sizing.TechGrantsW, _configuration.hud.sizing.TechGrantsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-
-                    _, _configuration.hud.sizing.TechSupportMin = 
-                    dropSizing("Support Min Level", nil, _configuration.hud.sizing.TechSupportMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
-
-                    _, _configuration.hud.sizing.TechAttackMin = 
-                    dropSizing("Attack Level", nil, _configuration.hud.sizing.TechAttackMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
-                    
-                    _, _configuration.hud.sizing.TechMegidMin = 
-                    dropSizing("Megid Min Level", nil, _configuration.hud.sizing.TechMegidMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
-
-                    _, _configuration.hud.sizing.TechGrantsMin = 
-                    dropSizing("Grants Min Level", nil, _configuration.hud.sizing.TechGrantsMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
-
-                    imgui.TreePop()
-                end
-
-                if imgui.TreeNodeEx("Consumables") then
-
-                    _configuration.hud.sizing.MonomateW, _configuration.hud.sizing.MonomateH = 
-                    dropSizing("Monomates", _configuration.hud.sizing.MonomateW, _configuration.hud.sizing.MonomateH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.DimateW, _configuration.hud.sizing.DimateH = 
-                    dropSizing("Dimates", _configuration.hud.sizing.DimateW, _configuration.hud.sizing.DimateH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TrimateW, _configuration.hud.sizing.TrimateH = 
-                    dropSizing("Trimates", _configuration.hud.sizing.TrimateW, _configuration.hud.sizing.TrimateH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.MonofluidW, _configuration.hud.sizing.MonofluidH = 
-                    dropSizing("Monofluids", _configuration.hud.sizing.MonofluidW, _configuration.hud.sizing.MonofluidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.DifluidW, _configuration.hud.sizing.DifluidH = 
-                    dropSizing("Difluids", _configuration.hud.sizing.DifluidW, _configuration.hud.sizing.DifluidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TrifluidW, _configuration.hud.sizing.TrifluidH = 
-                    dropSizing("Trifluids", _configuration.hud.sizing.TrifluidW, _configuration.hud.sizing.TrifluidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.SolAtomizerW, _configuration.hud.sizing.SolAtomizerH = 
-                    dropSizing("Sol Atomizers", _configuration.hud.sizing.SolAtomizerW, _configuration.hud.sizing.SolAtomizerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.MoonAtomizerW, _configuration.hud.sizing.MoonAtomizerH = 
-                    dropSizing("Moon Atomizers", _configuration.hud.sizing.MoonAtomizerW, _configuration.hud.sizing.MoonAtomizerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.StarAtomizerW, _configuration.hud.sizing.StarAtomizerH = 
-                    dropSizing("Star Atomizers", _configuration.hud.sizing.StarAtomizerW, _configuration.hud.sizing.StarAtomizerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.AntidoteW, _configuration.hud.sizing.AntidoteH = 
-                    dropSizing("Antidotes", _configuration.hud.sizing.AntidoteW, _configuration.hud.sizing.AntidoteH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.AntiparalysisW, _configuration.hud.sizing.AntiparalysisH = 
-                    dropSizing("Antiparalysis", _configuration.hud.sizing.AntiparalysisW, _configuration.hud.sizing.AntiparalysisH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TelepipeW, _configuration.hud.sizing.TelepipeH = 
-                    dropSizing("Telepipes", _configuration.hud.sizing.TelepipeW, _configuration.hud.sizing.TelepipeH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TrapVisionW, _configuration.hud.sizing.TrapVisionH = 
-                    dropSizing("Trap Visions", _configuration.hud.sizing.TrapVisionW, _configuration.hud.sizing.TrapVisionH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.ScapeDollW, _configuration.hud.sizing.ScapeDollH = 
-                    dropSizing("Scape Dolls", _configuration.hud.sizing.ScapeDollW, _configuration.hud.sizing.ScapeDollH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    imgui.TreePop()
-                end
-
-
-                if imgui.TreeNodeEx("Grinders/Materials") then
-
-                    _configuration.hud.sizing.MonogrinderW, _configuration.hud.sizing.MonogrinderH = 
-                    dropSizing("Monogrinders", _configuration.hud.sizing.MonogrinderW, _configuration.hud.sizing.MonogrinderH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.DigrinderW, _configuration.hud.sizing.DigrinderH = 
-                    dropSizing("Digrinders", _configuration.hud.sizing.DigrinderW, _configuration.hud.sizing.DigrinderH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.TrigrinderW, _configuration.hud.sizing.TrigrinderH = 
-                    dropSizing("Trigrinders", _configuration.hud.sizing.TrigrinderW, _configuration.hud.sizing.TrigrinderH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.HPMatW, _configuration.hud.sizing.HPMatH = 
-                    dropSizing("HP Material", _configuration.hud.sizing.HPMatW, _configuration.hud.sizing.HPMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.LuckMatW, _configuration.hud.sizing.LuckMatH = 
-                    dropSizing("Luck Material", _configuration.hud.sizing.LuckMatW, _configuration.hud.sizing.LuckMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.PowerMatW, _configuration.hud.sizing.PowerMatH = 
-                    dropSizing("Power Material", _configuration.hud.sizing.PowerMatW, _configuration.hud.sizing.PowerMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.MindMatW, _configuration.hud.sizing.MindMatH = 
-                    dropSizing("Mind Material", _configuration.hud.sizing.MindMatW, _configuration.hud.sizing.MindMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.DefenseMatW, _configuration.hud.sizing.DefenseMatH = 
-                    dropSizing("Defense Material", _configuration.hud.sizing.DefenseMatW, _configuration.hud.sizing.DefenseMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    _configuration.hud.sizing.EvadeMatW, _configuration.hud.sizing.EvadeMatH = 
-                    dropSizing("Evade Material", _configuration.hud.sizing.EvadeMatW, _configuration.hud.sizing.EvadeMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
-
-                    imgui.TreePop()
-                end
-
-                if imgui.Checkbox("Enable Clairs Deal 5 Items", _configuration.ClairesDealEnable) then
-                    _configuration.ClairesDealEnable = not _configuration.ClairesDealEnable
+                if imgui.Checkbox(additionalOverrideButtonText, _configuration[hudIdx].AdditionalHudOverrides) then
+                    _configuration[hudIdx].AdditionalHudOverrides = not _configuration[hudIdx].AdditionalHudOverrides
+                    _configuration[hudIdx].changed = true
                     this.changed = true
                 end
-                if _configuration.ClairesDealEnable then
-                    _configuration.hud.sizing.ClairesDealW, _configuration.hud.sizing.ClairesDealH = 
-                    dropSizing("Claire's Deal 5 Items", _configuration.hud.sizing.ClairesDealW, _configuration.hud.sizing.ClairesDealH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                if imgui.IsItemHovered() then imgui.SetTooltip("Enable Forcibly Overriding Settings to control from Main Hud") end
+
+                if imgui.Checkbox("Always On Top", _configuration[hudIdx].AlwaysOnTop) then
+                    local alwaysOnTop = not _configuration[hudIdx].AlwaysOnTop
+                    if alwaysOnTop then
+                        for j=1, _configuration.numHUDs do
+                            local hudIdx = "hud" .. j
+                            _configuration[hudIdx].AlwaysOnTop = false
+                        end
+                    end
+                    _configuration[hudIdx].AlwaysOnTop = alwaysOnTop
+                    _configuration[hudIdx].changed = true
+                    this.changed = true
+                end
+                if imgui.IsItemHovered() then imgui.SetTooltip("Forces This Hud On top of the rest, disabling this setting across all other Huds") end
+
+                PresentOverrideButton("EnableWindow", hudIdx)
+                if imgui.Checkbox("Enable", _configuration[hudIdx].EnableWindow) then
+                    _configuration[hudIdx].EnableWindow = not _configuration[hudIdx].EnableWindow
+                    _configuration[hudIdx].changed = true
+                    this.changed = true
+                end
+                
+                if imgui.TreeNodeEx("Window") then
+
+                    PresentOverrideButton("HideWhenMenu", hudIdx)
+                    if imgui.Checkbox("Hide when menus are open", _configuration[hudIdx].HideWhenMenu) then
+                        _configuration[hudIdx].HideWhenMenu = not _configuration[hudIdx].HideWhenMenu
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("HideWhenSymbolChat", hudIdx)
+                    if imgui.Checkbox("Hide when symbol chat/word select is open", _configuration[hudIdx].HideWhenSymbolChat) then
+                        _configuration[hudIdx].HideWhenSymbolChat = not _configuration[hudIdx].HideWhenSymbolChat
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("HideWhenMenuUnavailable", hudIdx)
+                    if imgui.Checkbox("Hide when the menu is unavailable", _configuration[hudIdx].HideWhenMenuUnavailable) then
+                        _configuration[hudIdx].HideWhenMenuUnavailable = not _configuration[hudIdx].HideWhenMenuUnavailable
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("NoTitleBar", hudIdx)
+                    if imgui.Checkbox("No title bar", _configuration[hudIdx].NoTitleBar == "NoTitleBar") then
+                        if _configuration[hudIdx].NoTitleBar == "NoTitleBar" then
+                            _configuration[hudIdx].NoTitleBar = ""
+                        else
+                            _configuration[hudIdx].NoTitleBar = "NoTitleBar"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("NoResize", hudIdx)
+                    if imgui.Checkbox("No resize", _configuration[hudIdx].NoResize == "NoResize") then
+                        if _configuration[hudIdx].NoResize == "NoResize" then
+                            _configuration[hudIdx].NoResize = ""
+                        else
+                            _configuration[hudIdx].NoResize = "NoResize"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("NoMove", hudIdx)
+                    if imgui.Checkbox("No move", _configuration[hudIdx].NoMove == "NoMove") then
+                        if _configuration[hudIdx].NoMove == "NoMove" then
+                            _configuration[hudIdx].NoMove = ""
+                        else
+                            _configuration[hudIdx].NoMove = "NoMove"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("AlwaysAutoResize", hudIdx)
+                    if imgui.Checkbox("Always Auto Resize", _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize") then
+                        if _configuration[hudIdx].AlwaysAutoResize == "AlwaysAutoResize" then
+                            _configuration[hudIdx].AlwaysAutoResize = ""
+                        else
+                            _configuration[hudIdx].AlwaysAutoResize = "AlwaysAutoResize"
+                        end
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("TransparentWindow", hudIdx)
+                    if imgui.Checkbox("Transparent window", _configuration[hudIdx].TransparentWindow) then
+                        _configuration[hudIdx].TransparentWindow = not _configuration[hudIdx].TransparentWindow
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    PresentOverrideButton("customHudColorEnable", hudIdx)
+                    if imgui.Checkbox("Custom Hud Color", _configuration[hudIdx].customHudColorEnable) then
+                        _configuration[hudIdx].customHudColorEnable = not _configuration[hudIdx].customHudColorEnable
+                        this.changed = true
+                    end
+
+                    if _configuration[hudIdx].customHudColorEnable then
+                        _configuration[hudIdx].customHudColorMarker     = PresentColorEditor("Marker Color",     0xFFFF9900, _configuration[hudIdx].customHudColorMarker)
+                        _configuration[hudIdx].customHudColorBackground = PresentColorEditor("Background Color", 0x4CCCCCCC, _configuration[hudIdx].customHudColorBackground)
+                        _configuration[hudIdx].customHudColorWindow     = PresentColorEditor("Window Color",     0x46000000, _configuration[hudIdx].customHudColorWindow)
+                    end
+
+                    imgui.TreePop()
+                end
+                
+                if imgui.TreeNodeEx("Display") then
+
+                    if _configuration[hudIdx].AdditionalHudOverrides then
+                        local overrideName = "reverseItemDirectionOverride"
+                        if imgui.Checkbox("##" .. overrideName, _configuration[hudIdx][overrideName]) then
+                            _configuration[hudIdx][overrideName] = not _configuration[hudIdx][overrideName]
+                            _configuration[hudIdx].changed = true
+                            if hudIdx == "hud1" then
+                                if _configuration[hudIdx].reverseItemDirection then
+                                    _configuration.itemDirectionReversedCount = 1
+                                else
+                                    _configuration.itemDirectionReversedCount = 0
+                                end
+                                for j=2, _configuration.maxNumHUDs do
+                                    local hudIdx = "hud" .. j
+                                    _configuration[hudIdx][overrideName] = _configuration["hud1"][overrideName]
+                                    _configuration[hudIdx].changed = true
+                                    if _configuration["hud1"].reverseItemDirection and _configuration[hudIdx].enable then
+                                        _configuration.itemDirectionReversedCount = _configuration.itemDirectionReversedCount + 1
+                                    end
+                                end
+                            end
+                            this.changed = true
+                        end
+                        if _configuration[hudIdx][overrideName] then
+                            _configuration[hudIdx].reverseItemDirection = _configuration["hud1"].reverseItemDirection
+                            _configuration[hudIdx].changed = true
+                        end
+                        imgui.SameLine(0, 4)
+                    end
+                    if imgui.Checkbox("Reverse Item Direction", _configuration[hudIdx].reverseItemDirection) then
+                        _configuration[hudIdx].reverseItemDirection = not _configuration[hudIdx].reverseItemDirection
+                        if _configuration[hudIdx].reverseItemDirection then
+                            _configuration.itemDirectionReversedCount = _configuration.itemDirectionReversedCount + 1
+                        else
+                            _configuration.itemDirectionReversedCount = _configuration.itemDirectionReversedCount - 1
+                        end
+                        this.changed = true
+                    end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("When Item is on right side of Hud, place mark on opposite and vice versa") end
+        
+                    PresentOverrideButton("clampItemView", hudIdx)
+                    if imgui.Checkbox("Clamp Item Into View", _configuration[hudIdx].clampItemView) then
+                        _configuration[hudIdx].clampItemView = not _configuration[hudIdx].clampItemView
+                        this.changed = true
+                    end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("All Visible Markers are not excluded from view, just held far right or left until turned around to face it") end
+        
+                    PresentOverrideButton("invertViewData", hudIdx)
+                    if imgui.Checkbox("Invert View", _configuration[hudIdx].invertViewData) then
+                        _configuration[hudIdx].invertViewData = not _configuration[hudIdx].invertViewData
+                        this.changed = true
+                    end
+        
+                    PresentOverrideButton("invertTickMarkers", hudIdx)
+                    if imgui.Checkbox("Invert Tick Markers", _configuration[hudIdx].invertTickMarkers) then
+                        _configuration[hudIdx].invertTickMarkers = not _configuration[hudIdx].invertTickMarkers
+                        this.changed = true
+                    end
+
+                    if viewingConeIndicatorFData[hudIdx] == nil or type(viewingConeIndicatorFData[hudIdx]) ~= "table" then
+                        newViewingConeIndicatorData(hudIdx)
+                    end
+                    imgui.PlotHistogram("Front", viewingConeIndicatorFData[hudIdx], 180, 0, "", 0, 100, 140, 20)
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Shows a representation of the viewing cone, 90 degrees is everything infront and directly to the sides") end
+                    imgui.PlotHistogram("Back", viewingConeIndicatorBData[hudIdx], 180, 0, "", 0, 100, 140, 20)
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Shows viewing angle behind, no longer a 'cone' infront but a 'pie' with a slice taken") end
+
+                    PresentOverrideButton("viewingConeDegs", hudIdx)
+                    imgui.PushItemWidth(140)
+                    success, _configuration[hudIdx].viewingConeDegs = imgui.SliderInt("Viewing Cone (Degrees)", _configuration[hudIdx].viewingConeDegs, 0, 180)
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                        newViewingConeIndicatorData(hudIdx)
+                    end
+        
+                    PresentOverrideButton("viewHudPrecision", hudIdx)
+                    imgui.PushItemWidth(140)
+                    success, _configuration[hudIdx].viewHudPrecision = imgui.SliderFloat("View Precision (> may lag)", _configuration[hudIdx].viewHudPrecision, 0.1, 2)
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                        _configuration[hudIdx].viewHudPrecision = clampVal(_configuration[hudIdx].viewHudPrecision, 0, 999999)
+                    end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Adjust so there are no awkward gaps between") end
+        
+                    PresentOverrideButton("ignoreItemMaxDist", hudIdx)
+                    imgui.PushItemWidth(100)
+                    success, _configuration[hudIdx].ignoreItemMaxDist = imgui.InputInt("Ignore Item Distance (far)", _configuration[hudIdx].ignoreItemMaxDist)
+                    imgui.PopItemWidth()
+                    if success then
+                        this.changed = true
+                        _configuration[hudIdx].ignoreItemMaxDist = clampVal(_configuration[hudIdx].ignoreItemMaxDist, 0, 999999)
+                    end
+                    if imgui.IsItemHovered() then imgui.SetTooltip("Filter out items further than the distance. Set to 0 for no filter") end
+
+                    imgui.TreePop()
                 end
 
+                if imgui.TreeNodeEx("Custom Sizing") then
+                    local SWidth = 110
+                    local SWidthP = SWidth + 16
+                    local SizingRange = {0,100}
+                    local MarkerSizeRange = {0.001,5}
+                    local MesetaRange = {1,999999}
+                    local TechRange = {1,30}
+                    local TechAntiRange = {1,7}
+
+                    if _configuration[hudIdx].customHudColorEnable then
+                        local PlotHistogramColor = shiftHexColor(_configuration[hudIdx].customHudColorMarker)
+                        imgui.PushStyleColor("PlotHistogram", PlotHistogramColor[2]/255, PlotHistogramColor[3]/255, PlotHistogramColor[4]/255, PlotHistogramColor[1]/255)
+                    end
+
+                    if imgui.TreeNodeEx("Non-Rares") then
+                    
+                        imgui.PushItemWidth(SWidthP)
+                        success, _configuration[hudIdx].sizing.HitMin = imgui.SliderInt("Minimum Hit", _configuration[hudIdx].sizing.HitMin,-10, 100)
+                        imgui.PopItemWidth()
+                        if success then
+                            this.changed = true
+                        end
+
+                        _configuration[hudIdx].sizing.LowHitWeaponsW, _configuration[hudIdx].sizing.LowHitWeaponsH = 
+                        dropSizing("Low Hit Weapons", _configuration[hudIdx].sizing.LowHitWeaponsW, _configuration[hudIdx].sizing.LowHitWeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.HighHitWeaponsW, _configuration[hudIdx].sizing.HighHitWeaponsH = 
+                        dropSizing("High Hit Weapons", _configuration[hudIdx].sizing.HighHitWeaponsW, _configuration[hudIdx].sizing.HighHitWeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.UselessArmorsW, _configuration[hudIdx].sizing.UselessArmorsH = 
+                        dropSizing("<4s Armor", _configuration[hudIdx].sizing.UselessArmorsW, _configuration[hudIdx].sizing.UselessArmorsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        _configuration[hudIdx].sizing.MaxSocketArmorW, _configuration[hudIdx].sizing.MaxSocketArmorH = 
+                        dropSizing("=4s Armor", _configuration[hudIdx].sizing.MaxSocketArmorW, _configuration[hudIdx].sizing.MaxSocketArmorH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        _configuration[hudIdx].sizing.UselessBarriersW, _configuration[hudIdx].sizing.UselessBarriersH = 
+                        dropSizing("Useless Barriers", _configuration[hudIdx].sizing.UselessBarriersW, _configuration[hudIdx].sizing.UselessBarriersH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        _configuration[hudIdx].sizing.UselessUnitsW, _configuration[hudIdx].sizing.UselessUnitsH = 
+                        dropSizing("Useless Units", _configuration[hudIdx].sizing.UselessUnitsW, _configuration[hudIdx].sizing.UselessUnitsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        _configuration[hudIdx].sizing.UselessTechsW, _configuration[hudIdx].sizing.UselessTechsH = 
+                        dropSizing("Useless Techs", _configuration[hudIdx].sizing.UselessTechsW, _configuration[hudIdx].sizing.UselessTechsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        if not _configuration.ignoreMeseta then
+                            _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMinH = 
+                            dropSizing("Meseta Height Min", _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMinH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                            _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMaxH = 
+                            dropSizing("Meseta Height Max", _configuration[hudIdx].sizing.MesetaW, _configuration[hudIdx].sizing.MesetaMaxH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                            imgui.PushItemWidth(SWidthP)
+                            success, _configuration[hudIdx].sizing.MesetaMin = imgui.DragInt("Meseta Min (will ignore below amount)", _configuration[hudIdx].sizing.MesetaMin, 10, MesetaRange[1], MesetaRange[2])
+                            imgui.PopItemWidth()
+                            if success then
+                                this.changed = true
+                            end
+                            if _configuration[hudIdx].sizing.MesetaMin > _configuration[hudIdx].sizing.MesetaMax then
+                                _configuration[hudIdx].sizing.MesetaMin = _configuration[hudIdx].sizing.MesetaMax
+                            end
+
+                            imgui.PushItemWidth(SWidthP)
+                            success, _configuration[hudIdx].sizing.MesetaMax = imgui.DragInt("Meseta Max (doesn't filter out)", _configuration[hudIdx].sizing.MesetaMax, 10, MesetaRange[1], MesetaRange[2])
+                            imgui.PopItemWidth()
+                            if success then
+                                this.changed = true
+                            end
+                            if _configuration[hudIdx].sizing.MesetaMax < _configuration[hudIdx].sizing.MesetaMin then
+                                _configuration[hudIdx].sizing.MesetaMax = _configuration[hudIdx].sizing.MesetaMin
+                            end
+                        end
+
+                        imgui.TreePop()
+                    end
+
+                    if imgui.TreeNodeEx("Rares") then
+
+                        _configuration[hudIdx].sizing.WeaponsW, _configuration[hudIdx].sizing.WeaponsH = 
+                        dropSizing("Weapons", _configuration[hudIdx].sizing.WeaponsW, _configuration[hudIdx].sizing.WeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.SRankWeaponsW, _configuration[hudIdx].sizing.SRankWeaponsH = 
+                        dropSizing("SRank Weapons", _configuration[hudIdx].sizing.SRankWeaponsW, _configuration[hudIdx].sizing.SRankWeaponsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        _configuration[hudIdx].sizing.ArmorsW, _configuration[hudIdx].sizing.ArmorsH = 
+                        dropSizing("Armor", _configuration[hudIdx].sizing.ArmorsW, _configuration[hudIdx].sizing.ArmorsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.BarriersW, _configuration[hudIdx].sizing.BarriersH = 
+                        dropSizing("Barriers", _configuration[hudIdx].sizing.BarriersW, _configuration[hudIdx].sizing.BarriersH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.UnitsW, _configuration[hudIdx].sizing.UnitsH = 
+                        dropSizing("Units", _configuration[hudIdx].sizing.UnitsW, _configuration[hudIdx].sizing.UnitsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.MagsW, _configuration[hudIdx].sizing.MagsH = 
+                        dropSizing("Mags", _configuration[hudIdx].sizing.MagsW, _configuration[hudIdx].sizing.MagsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.ConsumablesW, _configuration[hudIdx].sizing.ConsumablesH = 
+                        dropSizing("Consumables", _configuration[hudIdx].sizing.ConsumablesW, _configuration[hudIdx].sizing.ConsumablesH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        imgui.TreePop()
+                    end
+                    
+                    if imgui.TreeNodeEx("Techs") then
+
+                        _configuration[hudIdx].sizing.TechReverserW, _configuration[hudIdx].sizing.TechReverserH = 
+                        dropSizing("Reverser", _configuration[hudIdx].sizing.TechReverserW, _configuration[hudIdx].sizing.TechReverserH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechRyukerW, _configuration[hudIdx].sizing.TechRyukerH = 
+                        dropSizing("Ryuker", _configuration[hudIdx].sizing.TechRyukerW, _configuration[hudIdx].sizing.TechRyukerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechAnti5W, _configuration[hudIdx].sizing.TechAnti5H = 
+                        dropSizing("Anti 5", _configuration[hudIdx].sizing.TechAnti5W, _configuration[hudIdx].sizing.TechAnti5H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechAnti7W, _configuration[hudIdx].sizing.TechAnti7H = 
+                        dropSizing("Anti 7", _configuration[hudIdx].sizing.TechAnti7W, _configuration[hudIdx].sizing.TechAnti7H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechSupport15W, _configuration[hudIdx].sizing.TechSupport15H = 
+                        dropSizing("Support Tech 15", _configuration[hudIdx].sizing.TechSupport15W, _configuration[hudIdx].sizing.TechSupport15H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechSupport20W, _configuration[hudIdx].sizing.TechSupport20H = 
+                        dropSizing("Support Tech 20", _configuration[hudIdx].sizing.TechSupport20W, _configuration[hudIdx].sizing.TechSupport20H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechAttack15W, _configuration[hudIdx].sizing.TechAttack15H = 
+                        dropSizing("Attack Tech 15", _configuration[hudIdx].sizing.TechAttack15W, _configuration[hudIdx].sizing.TechAttack15H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechAttack20W, _configuration[hudIdx].sizing.TechAttack20H = 
+                        dropSizing("Attack Tech 20", _configuration[hudIdx].sizing.TechAttack20W, _configuration[hudIdx].sizing.TechAttack20H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechSupport30W, _configuration[hudIdx].sizing.TechSupport30H = 
+                        dropSizing("Support Tech", _configuration[hudIdx].sizing.TechSupport30W, _configuration[hudIdx].sizing.TechSupport30H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        _configuration[hudIdx].sizing.TechAttack30W, _configuration[hudIdx].sizing.TechAttack30H = 
+                        dropSizing("Attack Tech", _configuration[hudIdx].sizing.TechAttack30W, _configuration[hudIdx].sizing.TechAttack30H, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TechMegidW, _configuration[hudIdx].sizing.TechMegidH = 
+                        dropSizing("Megid", _configuration[hudIdx].sizing.TechMegidW, _configuration[hudIdx].sizing.TechMegidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                        
+                        _configuration[hudIdx].sizing.TechGrantsW, _configuration[hudIdx].sizing.TechGrantsH = 
+                        dropSizing("Grants", _configuration[hudIdx].sizing.TechGrantsW, _configuration[hudIdx].sizing.TechGrantsH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+
+                        _, _configuration[hudIdx].sizing.TechSupportMin = 
+                        dropSizing("Support Min Level", nil, _configuration[hudIdx].sizing.TechSupportMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
+
+                        _, _configuration[hudIdx].sizing.TechAttackMin = 
+                        dropSizing("Attack Level", nil, _configuration[hudIdx].sizing.TechAttackMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
+                        
+                        _, _configuration[hudIdx].sizing.TechMegidMin = 
+                        dropSizing("Megid Min Level", nil, _configuration[hudIdx].sizing.TechMegidMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
+
+                        _, _configuration[hudIdx].sizing.TechGrantsMin = 
+                        dropSizing("Grants Min Level", nil, _configuration[hudIdx].sizing.TechGrantsMin, SWidthP, SWidthP, MarkerSizeRange, TechRange, 1, 1)
+
+                        imgui.TreePop()
+                    end
+
+                    if imgui.TreeNodeEx("Consumables") then
+
+                        _configuration[hudIdx].sizing.MonomateW, _configuration[hudIdx].sizing.MonomateH = 
+                        dropSizing("Monomates", _configuration[hudIdx].sizing.MonomateW, _configuration[hudIdx].sizing.MonomateH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.DimateW, _configuration[hudIdx].sizing.DimateH = 
+                        dropSizing("Dimates", _configuration[hudIdx].sizing.DimateW, _configuration[hudIdx].sizing.DimateH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TrimateW, _configuration[hudIdx].sizing.TrimateH = 
+                        dropSizing("Trimates", _configuration[hudIdx].sizing.TrimateW, _configuration[hudIdx].sizing.TrimateH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.MonofluidW, _configuration[hudIdx].sizing.MonofluidH = 
+                        dropSizing("Monofluids", _configuration[hudIdx].sizing.MonofluidW, _configuration[hudIdx].sizing.MonofluidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.DifluidW, _configuration[hudIdx].sizing.DifluidH = 
+                        dropSizing("Difluids", _configuration[hudIdx].sizing.DifluidW, _configuration[hudIdx].sizing.DifluidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TrifluidW, _configuration[hudIdx].sizing.TrifluidH = 
+                        dropSizing("Trifluids", _configuration[hudIdx].sizing.TrifluidW, _configuration[hudIdx].sizing.TrifluidH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.SolAtomizerW, _configuration[hudIdx].sizing.SolAtomizerH = 
+                        dropSizing("Sol Atomizers", _configuration[hudIdx].sizing.SolAtomizerW, _configuration[hudIdx].sizing.SolAtomizerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.MoonAtomizerW, _configuration[hudIdx].sizing.MoonAtomizerH = 
+                        dropSizing("Moon Atomizers", _configuration[hudIdx].sizing.MoonAtomizerW, _configuration[hudIdx].sizing.MoonAtomizerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.StarAtomizerW, _configuration[hudIdx].sizing.StarAtomizerH = 
+                        dropSizing("Star Atomizers", _configuration[hudIdx].sizing.StarAtomizerW, _configuration[hudIdx].sizing.StarAtomizerH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.AntidoteW, _configuration[hudIdx].sizing.AntidoteH = 
+                        dropSizing("Antidotes", _configuration[hudIdx].sizing.AntidoteW, _configuration[hudIdx].sizing.AntidoteH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.AntiparalysisW, _configuration[hudIdx].sizing.AntiparalysisH = 
+                        dropSizing("Antiparalysis", _configuration[hudIdx].sizing.AntiparalysisW, _configuration[hudIdx].sizing.AntiparalysisH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TelepipeW, _configuration[hudIdx].sizing.TelepipeH = 
+                        dropSizing("Telepipes", _configuration[hudIdx].sizing.TelepipeW, _configuration[hudIdx].sizing.TelepipeH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TrapVisionW, _configuration[hudIdx].sizing.TrapVisionH = 
+                        dropSizing("Trap Visions", _configuration[hudIdx].sizing.TrapVisionW, _configuration[hudIdx].sizing.TrapVisionH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.ScapeDollW, _configuration[hudIdx].sizing.ScapeDollH = 
+                        dropSizing("Scape Dolls", _configuration[hudIdx].sizing.ScapeDollW, _configuration[hudIdx].sizing.ScapeDollH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        imgui.TreePop()
+                    end
+
+                    if imgui.TreeNodeEx("Grinders/Materials") then
+
+                        _configuration[hudIdx].sizing.MonogrinderW, _configuration[hudIdx].sizing.MonogrinderH = 
+                        dropSizing("Monogrinders", _configuration[hudIdx].sizing.MonogrinderW, _configuration[hudIdx].sizing.MonogrinderH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.DigrinderW, _configuration[hudIdx].sizing.DigrinderH = 
+                        dropSizing("Digrinders", _configuration[hudIdx].sizing.DigrinderW, _configuration[hudIdx].sizing.DigrinderH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TrigrinderW, _configuration[hudIdx].sizing.TrigrinderH = 
+                        dropSizing("Trigrinders", _configuration[hudIdx].sizing.TrigrinderW, _configuration[hudIdx].sizing.TrigrinderH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.HPMatW, _configuration[hudIdx].sizing.HPMatH = 
+                        dropSizing("HP Material", _configuration[hudIdx].sizing.HPMatW, _configuration[hudIdx].sizing.HPMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.TPMatW, _configuration[hudIdx].sizing.TPMatH = 
+                        dropSizing("TP Material", _configuration[hudIdx].sizing.TPMatW, _configuration[hudIdx].sizing.TPMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.LuckMatW, _configuration[hudIdx].sizing.LuckMatH = 
+                        dropSizing("Luck Material", _configuration[hudIdx].sizing.LuckMatW, _configuration[hudIdx].sizing.LuckMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.PowerMatW, _configuration[hudIdx].sizing.PowerMatH = 
+                        dropSizing("Power Material", _configuration[hudIdx].sizing.PowerMatW, _configuration[hudIdx].sizing.PowerMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.MindMatW, _configuration[hudIdx].sizing.MindMatH = 
+                        dropSizing("Mind Material", _configuration[hudIdx].sizing.MindMatW, _configuration[hudIdx].sizing.MindMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.DefenseMatW, _configuration[hudIdx].sizing.DefenseMatH = 
+                        dropSizing("Defense Material", _configuration[hudIdx].sizing.DefenseMatW, _configuration[hudIdx].sizing.DefenseMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        _configuration[hudIdx].sizing.EvadeMatW, _configuration[hudIdx].sizing.EvadeMatH = 
+                        dropSizing("Evade Material", _configuration[hudIdx].sizing.EvadeMatW, _configuration[hudIdx].sizing.EvadeMatH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+
+                        imgui.TreePop()
+                    end
+
+                    if imgui.Checkbox("Enable Clairs Deal 5 Items", _configuration[hudIdx].sizing.ClairesDealEnable) then
+                        _configuration[hudIdx].sizing.ClairesDealEnable = not _configuration[hudIdx].sizing.ClairesDealEnable
+                        this.changed = true
+                    end
+                    if _configuration[hudIdx].sizing.ClairesDealEnable then
+                        _configuration[hudIdx].sizing.ClairesDealW, _configuration[hudIdx].sizing.ClairesDealH = 
+                        dropSizing("Claire's Deal 5 Items", _configuration[hudIdx].sizing.ClairesDealW, _configuration[hudIdx].sizing.ClairesDealH, SWidth, SWidth, MarkerSizeRange, SizingRange)
+                    end
+
+                    if _configuration[hudIdx].customHudColorEnable then
+                        imgui.PopStyleColor()
+                    end
+
+                    imgui.TreePop()
+                end
+
+                if not _configuration.tileAllHuds or hudIdx == "hud1" then
+                    imgui.Text("Position and Size")
+                    PresentOverrideButton("Anchor", hudIdx)
+                    imgui.PushItemWidth(200)
+                    success, _configuration[hudIdx].Anchor = imgui.Combo("Anchor", _configuration[hudIdx].Anchor, anchorList, table.getn(anchorList))
+                    imgui.PopItemWidth()
+                    if success then
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    imgui.PushItemWidth(100)
+                    PresentOverrideButton("X", hudIdx)
+                    success, _configuration[hudIdx].X = imgui.InputInt("X", _configuration[hudIdx].X)
+                    imgui.PopItemWidth()
+                    if success then
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+
+                    imgui.SameLine(0, 38)
+                    imgui.PushItemWidth(100)
+                    PresentOverrideButton("Y", hudIdx)
+                    success, _configuration[hudIdx].Y = imgui.InputInt("Y", _configuration[hudIdx].Y)
+                    imgui.PopItemWidth()
+                    if success then
+                        _configuration[hudIdx].changed = true
+                        this.changed = true
+                    end
+                end
+
+                imgui.PushItemWidth(100)
+                PresentOverrideButton("W", hudIdx)
+                success, _configuration[hudIdx].W = imgui.InputInt("Width", _configuration[hudIdx].W)
+                imgui.PopItemWidth()
+                if success then
+                    _configuration[hudIdx].changed = true
+                    this.changed = true
+                end
+
+                imgui.SameLine(0, 10)
+                imgui.PushItemWidth(100)
+                PresentOverrideButton("H", hudIdx)
+                success, _configuration[hudIdx].H = imgui.InputInt("Height", _configuration[hudIdx].H)
+                imgui.PopItemWidth()
+                if success then
+                    _configuration[hudIdx].changed = true
+                    this.changed = true
+                end
                 imgui.TreePop()
             end
 
-            imgui.Text("Position and Size")
-            imgui.PushItemWidth(200)
-            success, _configuration.hud.Anchor = imgui.Combo("Anchor", _configuration.hud.Anchor, anchorList, table.getn(anchorList))
-            imgui.PopItemWidth()
-            if success then
-                _configuration.hud.changed = true
-                this.changed = true
+            if this.changed and i > 1 then
+                CopyOverridedSettings("EnableWindow", hudIdx)
+                CopyOverridedSettings("HideWhenMenu", hudIdx)
+                CopyOverridedSettings("HideWhenSymbolChat", hudIdx)
+                CopyOverridedSettings("HideWhenMenuUnavailable", hudIdx)
+                CopyOverridedSettings("NoTitleBar", hudIdx)
+                CopyOverridedSettings("NoResize", hudIdx)
+                CopyOverridedSettings("NoMove", hudIdx)
+                CopyOverridedSettings("AlwaysAutoResize", hudIdx)
+                CopyOverridedSettings("TransparentWindow", hudIdx)
+                CopyOverridedSettings("customHudColorEnable", hudIdx)
+                CopyOverridedSettings("reverseItemDirection", hudIdx)
+                CopyOverridedSettings("clampItemView", hudIdx)
+                CopyOverridedSettings("invertViewData", hudIdx)
+                CopyOverridedSettings("invertTickMarkers", hudIdx)
+                CopyOverridedSettings("viewingConeDegs", hudIdx)
+                CopyOverridedSettings("viewHudPrecision", hudIdx)
+                CopyOverridedSettings("ignoreItemMaxDist", hudIdx)
+                CopyOverridedSettings("Anchor", hudIdx)
+                CopyOverridedSettings("X", hudIdx)
+                CopyOverridedSettings("Y", hudIdx)
+                CopyOverridedSettings("H", hudIdx)
+                CopyOverridedSettings("W", hudIdx)
             end
-
-            imgui.PushItemWidth(100)
-            success, _configuration.hud.X = imgui.InputInt("X", _configuration.hud.X)
-            imgui.PopItemWidth()
-            if success then
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-
-            imgui.SameLine(0, 38)
-            imgui.PushItemWidth(100)
-            success, _configuration.hud.Y = imgui.InputInt("Y", _configuration.hud.Y)
-            imgui.PopItemWidth()
-            if success then
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-
-            imgui.PushItemWidth(100)
-            success, _configuration.hud.W = imgui.InputInt("Width", _configuration.hud.W)
-            imgui.PopItemWidth()
-            if success then
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-
-            imgui.SameLine(0, 10)
-            imgui.PushItemWidth(100)
-            success, _configuration.hud.H = imgui.InputInt("Height", _configuration.hud.H)
-            imgui.PopItemWidth()
-            if success then
-                _configuration.hud.changed = true
-                this.changed = true
-            end
-            imgui.TreePop()
         end
 
     end
